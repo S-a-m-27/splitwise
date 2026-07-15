@@ -1,0 +1,1 @@
+export const ACTIVITY_STALE_TIME_MS = 60_000;

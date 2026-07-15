@@ -1,0 +1,1 @@
+export const SETTLEMENTS_STALE_TIME_MS = 60_000;

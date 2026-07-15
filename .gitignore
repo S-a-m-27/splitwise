@@ -1,0 +1,68 @@
+# Dependencies
+node_modules/
+frontend/node_modules/
+
+# Environment (never commit secrets)
+.env
+.env.local
+.env.*.local
+frontend/.env
+frontend/.env.local
+frontend/.env.*.local
+!frontend/.env.example
+
+# Next.js
+frontend/.next/
+frontend/out/
+frontend/build/
+
+# PWA build artifacts (regenerated on each production build)
+frontend/public/sw.js
+frontend/public/workbox-*.js
+frontend/public/fallback-*.js
+frontend/public/swe-worker-*.js
+
+# Vercel
+.vercel/
+frontend/.vercel/
+
+# Supabase local CLI
+supabase/.branches/
+supabase/.temp/
+.branches/
+.temp/
+
+# Testing / coverage
+frontend/coverage/
+coverage/
+
+# TypeScript
+*.tsbuildinfo
+
+# Debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+tserrors*.txt
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Editors / IDEs
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+*.swp
+*.swo
+*~
+
+# Certificates / keys
+*.pem
+*.key
+
+# Cursor / local tooling
+.cursor/
