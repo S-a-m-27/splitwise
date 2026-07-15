@@ -6,6 +6,7 @@ import { mapSettlementRowsToInput } from "@/features/settlements/adapters/map-se
 import {
   SettlementsServiceError,
   getSettlementsErrorMessage,
+  normalizeSettlementsError,
 } from "@/features/settlements/services/settlements.errors";
 import type {
   CreateSettlementInput,
@@ -24,24 +25,35 @@ const SETTLEMENT_LIST_SELECT = `
   id,
   group_id,
   from_user_id,
+  from_guest_id,
   to_user_id,
+  to_guest_id,
   amount,
   notes,
   created_at,
   groups(id, name, icon),
   from_user:profiles!settlements_from_user_id_fkey(id, full_name),
-  to_user:profiles!settlements_to_user_id_fkey(id, full_name)
+  to_user:profiles!settlements_to_user_id_fkey(id, full_name),
+  from_guest:group_guests!settlements_from_guest_id_fkey(id, display_name),
+  to_guest:group_guests!settlements_to_guest_id_fkey(id, display_name)
+`;
+
+const SETTLEMENT_BALANCE_SELECT = `
+  id,
+  group_id,
+  from_user_id,
+  from_guest_id,
+  to_user_id,
+  to_guest_id,
+  amount
 `;
 
 interface SettlementListRow extends SettlementRow {
   groups: { id: string; name: string; icon: string } | null;
   from_user: { id: string; full_name: string } | null;
   to_user: { id: string; full_name: string } | null;
-}
-
-interface MemberNameRow {
-  user_id: string;
-  profiles: { full_name: string } | null;
+  from_guest: { id: string; display_name: string } | null;
+  to_guest: { id: string; display_name: string } | null;
 }
 
 interface GuestNameRow {
@@ -60,17 +72,51 @@ async function requireUserId(): Promise<string> {
   return user.id;
 }
 
+function resolveSettlementParty(
+  row: SettlementListRow,
+  side: "from" | "to",
+): { participantId: string; participantName: string } {
+  if (side === "from") {
+    if (row.from_user_id) {
+      return {
+        participantId: row.from_user_id,
+        participantName: row.from_user?.full_name?.trim() || "Member",
+      };
+    }
+
+    return {
+      participantId: row.from_guest_id!,
+      participantName: row.from_guest?.display_name?.trim() || "Guest",
+    };
+  }
+
+  if (row.to_user_id) {
+    return {
+      participantId: row.to_user_id,
+      participantName: row.to_user?.full_name?.trim() || "Member",
+    };
+  }
+
+  return {
+    participantId: row.to_guest_id!,
+    participantName: row.to_guest?.display_name?.trim() || "Guest",
+  };
+}
+
 function mapSettlementListItem(row: SettlementListRow): SettlementListItem {
   const amount = Number(row.amount);
+  const fromParty = resolveSettlementParty(row, "from");
+  const toParty = resolveSettlementParty(row, "to");
+
   return {
     id: row.id,
     groupId: row.group_id,
     groupName: row.groups?.name ?? "Unknown group",
     groupIcon: row.groups?.icon ?? "👥",
-    fromUserId: row.from_user_id,
-    fromUserName: row.from_user?.full_name?.trim() || "Someone",
-    toUserId: row.to_user_id,
-    toUserName: row.to_user?.full_name?.trim() || "Someone",
+    fromUserId: fromParty.participantId,
+    fromUserName: fromParty.participantName,
+    toUserId: toParty.participantId,
+    toUserName: toParty.participantName,
     amount,
     amountLabel: formatCurrency(amount),
     notes: row.notes ?? undefined,
@@ -87,7 +133,10 @@ async function fetchParticipantNames(): Promise<Map<string, string>> {
     supabase.from("group_guests").select("id, display_name"),
   ]);
 
-  for (const row of (membersResult.data ?? []) as MemberNameRow[]) {
+  for (const row of (membersResult.data ?? []) as {
+    user_id: string;
+    profiles: { full_name: string } | null;
+  }[]) {
     names.set(row.user_id, row.profiles?.full_name?.trim() || "Member");
   }
 
@@ -130,9 +179,7 @@ export const settlementsService = {
         .select(
           "id, group_id, title, created_at, amount, paid_by, paid_by_guest_id, split_type, expense_participants(user_id, guest_id)",
         ),
-      supabase
-        .from("settlements")
-        .select("id, group_id, from_user_id, to_user_id, amount, notes, created_at"),
+      supabase.from("settlements").select(SETTLEMENT_BALANCE_SELECT),
       fetchParticipantNames(),
     ]);
 
@@ -164,7 +211,7 @@ export const settlementsService = {
     const settlementMeta = new Map(
       (settlementsResult.data ?? []).map((row) => [
         row.id,
-        { notes: row.notes ?? undefined, createdAt: row.created_at },
+        { notes: undefined, createdAt: "" },
       ]),
     );
 
@@ -255,14 +302,15 @@ export const settlementsService = {
 
     const { data, error } = await supabase.rpc("create_settlement", {
       p_group_id: input.groupId,
-      p_from_user_id: input.fromUserId,
-      p_to_user_id: input.toUserId,
+      p_from_participant_id: input.fromUserId,
+      p_to_participant_id: input.toUserId,
       p_amount: input.amount,
       p_notes: input.notes || null,
     });
 
     if (error) {
-      throw new SettlementsServiceError("UNKNOWN", error.message);
+      const normalized = normalizeSettlementsError(error);
+      throw new SettlementsServiceError(normalized.code, normalized.message);
     }
     if (!data) {
       throw new SettlementsServiceError("UNKNOWN", "Failed to record settlement.");

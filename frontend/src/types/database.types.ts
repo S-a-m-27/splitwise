@@ -345,8 +345,10 @@ export interface Database {
         Row: {
           id: string;
           group_id: string;
-          from_user_id: string;
-          to_user_id: string;
+          from_user_id: string | null;
+          from_guest_id: string | null;
+          to_user_id: string | null;
+          to_guest_id: string | null;
           amount: number;
           notes: string | null;
           created_by: string;
@@ -355,8 +357,10 @@ export interface Database {
         Insert: {
           id?: string;
           group_id: string;
-          from_user_id: string;
-          to_user_id: string;
+          from_user_id?: string | null;
+          from_guest_id?: string | null;
+          to_user_id?: string | null;
+          to_guest_id?: string | null;
           amount: number;
           notes?: string | null;
           created_by: string;
@@ -365,8 +369,10 @@ export interface Database {
         Update: {
           id?: string;
           group_id?: string;
-          from_user_id?: string;
-          to_user_id?: string;
+          from_user_id?: string | null;
+          from_guest_id?: string | null;
+          to_user_id?: string | null;
+          to_guest_id?: string | null;
           amount?: number;
           notes?: string | null;
           created_by?: string;
@@ -392,6 +398,20 @@ export interface Database {
             columns: ["to_user_id"];
             isOneToOne: false;
             referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "settlements_from_guest_id_fkey";
+            columns: ["from_guest_id"];
+            isOneToOne: false;
+            referencedRelation: "group_guests";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "settlements_to_guest_id_fkey";
+            columns: ["to_guest_id"];
+            isOneToOne: false;
+            referencedRelation: "group_guests";
             referencedColumns: ["id"];
           },
           {
@@ -488,8 +508,8 @@ export interface Database {
       create_settlement: {
         Args: {
           p_group_id: string;
-          p_from_user_id: string;
-          p_to_user_id: string;
+          p_from_participant_id: string;
+          p_to_participant_id: string;
           p_amount: number;
           p_notes?: string | null;
         };

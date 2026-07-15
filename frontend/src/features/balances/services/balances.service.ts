@@ -43,7 +43,9 @@ const SETTLEMENTS_SELECT = `
   id,
   group_id,
   from_user_id,
+  from_guest_id,
   to_user_id,
+  to_guest_id,
   amount
 `;
 
