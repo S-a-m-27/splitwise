@@ -292,20 +292,37 @@ export function ExpenseForm({
     <form onSubmit={handleSubmit} className={cn("flex flex-col gap-5 min-[375px]:gap-6", className)}>
       {showHero && (
         <>
-          <section className="relative overflow-hidden rounded-2xl border border-primary/20 bg-card/90 p-4 shadow-sm min-[375px]:rounded-3xl min-[375px]:p-5">
-            <div className="aurora pointer-events-none absolute inset-0 opacity-60" aria-hidden="true" />
-            <div className="relative">
-              <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-primary">
-                Total amount
-              </p>
+          <section className="relative overflow-hidden rounded-2xl border border-primary/25 bg-gradient-to-br from-card via-card to-primary/5 p-4 shadow-md min-[375px]:rounded-3xl min-[375px]:p-5">
+            <div className="aurora pointer-events-none absolute inset-0 opacity-50" aria-hidden="true" />
+            <div
+              className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent"
+              aria-hidden="true"
+            />
+
+            <div className="relative flex flex-col gap-4">
+              <div className="flex items-end justify-between gap-3">
+                <div>
+                  <p className="text-[11px] font-bold tracking-[0.14em] text-primary uppercase min-[375px]:text-xs">
+                    Total amount
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground min-[375px]:text-[13px]">
+                    Tap to enter what was spent
+                  </p>
+                </div>
+                <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-semibold text-primary">
+                  Live split
+                </span>
+              </div>
+
               <AmountInput
                 value={values.amount}
                 onChange={handleAmountChange}
                 variant="hero"
                 aria-invalid={!!amountError}
               />
+
               {amountError && (
-                <p role="alert" className="mt-2 text-sm text-destructive">
+                <p role="alert" className="text-sm text-destructive">
                   {amountError}
                 </p>
               )}
