@@ -174,7 +174,17 @@ export function SplitLivePreview({
             {formatMoney(parsedAmount)}
           </p>
         ) : (
-          <p className="mt-1 text-lg font-semibold text-muted-foreground">Enter an amount</p>
+          <div className="mt-1">
+            <p
+              className="font-heading text-2xl font-bold tabular-nums text-foreground/25 min-[375px]:text-3xl"
+              aria-hidden="true"
+            >
+              {symbol} —
+            </p>
+            <p className={cn("mt-1.5", META_TEXT_CLASS)}>
+              Updates automatically when you enter the total amount above.
+            </p>
+          </div>
         )}
       </div>
 
