@@ -12,7 +12,9 @@ import type {
   OutstandingDebt,
   SettlementListItem,
 } from "@/features/settlements/types";
+import { buildDebtBreakdown } from "@/features/settlements/utils/build-debt-breakdown";
 import { formatCurrency } from "@/features/dashboard/utils/format-currency";
+import { formatMoney } from "@/lib/currency";
 import { createClient as createBrowserClient } from "@/lib/supabase/client";
 import type { SettlementRow } from "@/types/database.types";
 
@@ -126,9 +128,11 @@ export const settlementsService = {
       supabase
         .from("expenses")
         .select(
-          "id, group_id, amount, paid_by, paid_by_guest_id, split_type, expense_participants(user_id, guest_id)",
+          "id, group_id, title, created_at, amount, paid_by, paid_by_guest_id, split_type, expense_participants(user_id, guest_id)",
         ),
-      supabase.from("settlements").select("id, group_id, from_user_id, to_user_id, amount"),
+      supabase
+        .from("settlements")
+        .select("id, group_id, from_user_id, to_user_id, amount, notes, created_at"),
       fetchParticipantNames(),
     ]);
 
@@ -150,6 +154,24 @@ export const settlementsService = {
       currentUserId: userId,
     });
 
+    const expenseMeta = new Map(
+      (expensesResult.data ?? []).map((row) => [
+        row.id,
+        { title: row.title, createdAt: row.created_at },
+      ]),
+    );
+
+    const settlementMeta = new Map(
+      (settlementsResult.data ?? []).map((row) => [
+        row.id,
+        { notes: row.notes ?? undefined, createdAt: row.created_at },
+      ]),
+    );
+
+    const settlementInputs = mapSettlementRowsToInput(
+      (settlementsResult.data ?? []) as SettlementRow[],
+    );
+
     const debts: OutstandingDebt[] = [];
 
     for (const [groupId, groupResult] of result.groupBalances) {
@@ -163,6 +185,18 @@ export const settlementsService = {
         const toName = names.get(rel.toUserId) ?? "Someone";
 
         if (rel.fromUserId === userId) {
+          const breakdown = buildDebtBreakdown({
+            groupId,
+            fromUserId: rel.fromUserId,
+            toUserId: rel.toUserId,
+            expenseResults: result.expenseResults,
+            settlements: settlementInputs,
+            expenseMeta,
+            settlementMeta,
+            names,
+            formatMoney,
+          });
+
           debts.push({
             id: `${groupId}-${rel.fromUserId}-${rel.toUserId}`,
             groupId,
@@ -175,8 +209,21 @@ export const settlementsService = {
             amount,
             amountLabel: formatCurrency(amount),
             direction: "you_owe",
+            breakdown,
           });
         } else if (rel.toUserId === userId) {
+          const breakdown = buildDebtBreakdown({
+            groupId,
+            fromUserId: rel.fromUserId,
+            toUserId: rel.toUserId,
+            expenseResults: result.expenseResults,
+            settlements: settlementInputs,
+            expenseMeta,
+            settlementMeta,
+            names,
+            formatMoney,
+          });
+
           debts.push({
             id: `${groupId}-${rel.fromUserId}-${rel.toUserId}`,
             groupId,
@@ -189,6 +236,7 @@ export const settlementsService = {
             amount,
             amountLabel: formatCurrency(amount),
             direction: "owed_to_you",
+            breakdown,
           });
         }
       }

@@ -15,6 +15,7 @@ import { ActivityFeedSkeleton } from "@/features/dashboard/components/dashboard-
 import { SectionHeader } from "@/features/profile/components/section-header";
 import { EmptyState } from "@/features/groups/components/empty-state";
 import { DebtCard } from "@/features/settlements/components/debt-card";
+import { DebtBreakdownSheet } from "@/features/settlements/components/debt-breakdown-sheet";
 import { SettlementFormDialog } from "@/features/settlements/components/settlement-form-dialog";
 import {
   useCreateSettlement,
@@ -44,10 +45,17 @@ export function SettlementsPageContent() {
   const createSettlement = useCreateSettlement();
   const [selectedDebt, setSelectedDebt] = useState<OutstandingDebt | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [reportDebt, setReportDebt] = useState<OutstandingDebt | null>(null);
+  const [reportOpen, setReportOpen] = useState(false);
 
   function openSettlement(debt: OutstandingDebt) {
     setSelectedDebt(debt);
     setDialogOpen(true);
+  }
+
+  function openReport(debt: OutstandingDebt) {
+    setReportDebt(debt);
+    setReportOpen(true);
   }
 
   function handleSettlementSubmit(amount: number, notes: string) {
@@ -96,7 +104,7 @@ export function SettlementsPageContent() {
           <SectionHeader
             id="outstanding-debts-heading"
             title="Outstanding balances"
-            description="Simplified debts from your real expense data."
+            description="Simplified debts with expense and payment breakdowns."
           />
 
           {debtsLoading ? (
@@ -124,7 +132,12 @@ export function SettlementsPageContent() {
                     You owe
                   </h3>
                   {youOwe.map((debt) => (
-                    <DebtCard key={debt.id} debt={debt} onSettle={openSettlement} />
+                    <DebtCard
+                      key={debt.id}
+                      debt={debt}
+                      onSettle={openSettlement}
+                      onViewReport={openReport}
+                    />
                   ))}
                 </div>
               )}
@@ -135,7 +148,12 @@ export function SettlementsPageContent() {
                     Owed to you
                   </h3>
                   {owedToYou.map((debt) => (
-                    <DebtCard key={debt.id} debt={debt} onSettle={openSettlement} />
+                    <DebtCard
+                      key={debt.id}
+                      debt={debt}
+                      onSettle={openSettlement}
+                      onViewReport={openReport}
+                    />
                   ))}
                 </div>
               )}
@@ -184,6 +202,12 @@ export function SettlementsPageContent() {
           </DashboardSectionPanel>
         </section>
       </PageStack>
+
+      <DebtBreakdownSheet
+        debt={reportDebt}
+        open={reportOpen}
+        onOpenChange={setReportOpen}
+      />
 
       <SettlementFormDialog
         open={dialogOpen}

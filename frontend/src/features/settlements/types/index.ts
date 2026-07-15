@@ -13,6 +13,31 @@ export interface SettlementListItem {
   createdAt: string;
 }
 
+export type DebtBreakdownLineType =
+  | "expense_owed"
+  | "expense_credit"
+  | "settlement"
+  | "settlement_received";
+
+export interface DebtBreakdownLine {
+  readonly id: string;
+  readonly type: DebtBreakdownLineType;
+  readonly title: string;
+  readonly description: string;
+  readonly amount: number;
+  readonly amountLabel: string;
+  readonly dateLabel?: string;
+  readonly sortKey: string;
+}
+
+export interface DebtBreakdown {
+  readonly lines: readonly DebtBreakdownLine[];
+  readonly expenseCount: number;
+  readonly settlementCount: number;
+  readonly calculatedNet: number;
+  readonly calculatedNetLabel: string;
+}
+
 export interface OutstandingDebt {
   id: string;
   groupId: string;
@@ -26,6 +51,7 @@ export interface OutstandingDebt {
   amountLabel: string;
   /** Positive = someone owes you, negative = you owe */
   direction: "you_owe" | "owed_to_you";
+  breakdown: DebtBreakdown;
 }
 
 export interface CreateSettlementInput {
