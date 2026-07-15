@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/sheet";
 import { Logo } from "@/features/landing/components/logo";
 import { LANDING_NAV_LINKS } from "@/features/landing/constants/content";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { ROUTES } from "@/constants/routes";
 import { cn } from "@/lib/utils";
 
@@ -53,6 +54,7 @@ export function LandingNavbar() {
         </div>
 
         <div className="hidden items-center gap-2 md:flex">
+          <ThemeToggle />
           <Button
             variant="ghost"
             size="sm"
@@ -70,20 +72,23 @@ export function LandingNavbar() {
           </Button>
         </div>
 
-        {/* Mobile menu trigger — primary nav on small screens */}
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          className={cn(
-            "inline-flex size-11 items-center justify-center rounded-xl md:hidden",
-            "bg-accent/60 text-foreground transition-colors",
-            "hover:bg-accent active:scale-95",
-            "focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
-          )}
-          aria-label="Open menu"
-        >
-          <Menu className="size-5" />
-        </button>
+        {/* Mobile: theme + menu */}
+        <div className="flex items-center gap-1.5 md:hidden">
+          <ThemeToggle />
+          <button
+            type="button"
+            onClick={() => setOpen(true)}
+            className={cn(
+              "inline-flex size-11 items-center justify-center rounded-xl",
+              "bg-accent/60 text-foreground transition-colors",
+              "hover:bg-accent active:scale-95",
+              "focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
+            )}
+            aria-label="Open menu"
+          >
+            <Menu className="size-5" />
+          </button>
+        </div>
       </nav>
 
       <Sheet open={open} onOpenChange={setOpen}>
@@ -111,7 +116,9 @@ export function LandingNavbar() {
             ))}
           </nav>
 
-          <div className="mt-4 flex flex-col gap-3 border-t px-4 pt-6">
+          <ThemeToggle variant="menu" />
+
+          <div className="mt-2 flex flex-col gap-3 border-t px-4 pt-4">
             <Button
               variant="outline"
               size="lg"
