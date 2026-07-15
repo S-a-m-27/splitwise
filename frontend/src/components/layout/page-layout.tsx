@@ -54,6 +54,7 @@ interface BackHeaderProps {
   title: string;
   backHref: string;
   backLabel?: string;
+  description?: string;
   action?: ReactNode;
   className?: string;
 }
@@ -63,34 +64,43 @@ export function BackHeader({
   title,
   backHref,
   backLabel = "Back",
+  description,
   action,
   className,
 }: BackHeaderProps) {
   return (
-    <div
-      className={cn(
-        "flex min-h-11 items-center justify-between gap-3",
-        className,
-      )}
-    >
-      <div className="flex min-w-0 flex-1 items-center gap-1.5">
-        <Link
-          href={backHref}
-          className={cn(
-            "flex size-11 shrink-0 items-center justify-center rounded-xl text-muted-foreground",
-            "transition-colors hover:bg-muted hover:text-foreground active:bg-muted/80",
-            "focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
-          )}
-          aria-label={backLabel}
-        >
-          <ArrowLeft className="size-5" aria-hidden="true" />
-        </Link>
-        <h1 className="truncate font-heading text-lg font-bold leading-tight text-foreground min-[375px]:text-xl">
-          {title}
-        </h1>
+    <header className={cn("flex flex-col gap-2", className)}>
+      <div className="flex min-h-11 items-center justify-between gap-3">
+        <div className="flex min-w-0 flex-1 items-center gap-1.5">
+          <Link
+            href={backHref}
+            className={cn(
+              "flex size-11 shrink-0 items-center justify-center rounded-xl text-muted-foreground",
+              "transition-colors hover:bg-muted hover:text-foreground active:bg-muted/80",
+              "focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
+            )}
+            aria-label={backLabel}
+          >
+            <ArrowLeft className="size-5" aria-hidden="true" />
+          </Link>
+          <h1 className="truncate font-heading text-lg font-bold leading-tight text-foreground min-[375px]:text-xl">
+            {title}
+          </h1>
+        </div>
+
+        {action && <div className="shrink-0">{action}</div>}
       </div>
 
-      {action && <div className="shrink-0">{action}</div>}
-    </div>
+      {description && (
+        <p
+          className={cn(
+            "pl-[calc(2.75rem+0.375rem)]",
+            META_TEXT_CLASS,
+          )}
+        >
+          {description}
+        </p>
+      )}
+    </header>
   );
 }
