@@ -23,6 +23,7 @@ import {
 } from "@/features/profile/components/profile-skeleton";
 import { SectionHeader } from "@/features/profile/components/section-header";
 import { SettingsList } from "@/features/profile/components/settings-item";
+import { ThemeSelector } from "@/features/profile/components/theme-selector";
 import { StatsCard } from "@/features/profile/components/stats-card";
 import { APP_ABOUT } from "@/features/profile/constants/app-about";
 import { PROFILE_SETTINGS_ITEMS } from "@/features/profile/constants/settings-items";
@@ -41,7 +42,7 @@ export function ProfilePageContent() {
     }
 
     if (item.id === "preferences") {
-      toast.info("App preferences will be available in a future update.");
+      toast.info("More preferences like notifications and currency are coming soon.");
       return;
     }
 
@@ -137,6 +138,7 @@ export function ProfilePageContent() {
             title="Settings"
             description="Account, security, and app information."
           />
+          <ThemeSelector />
           <SettingsList items={PROFILE_SETTINGS_ITEMS} onAction={handleSettingsAction} />
         </section>
 

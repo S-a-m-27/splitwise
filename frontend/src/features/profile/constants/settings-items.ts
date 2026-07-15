@@ -21,7 +21,7 @@ export const PROFILE_SETTINGS_ITEMS: readonly SettingsItemConfig[] = [
   {
     id: "preferences",
     label: "App Preferences",
-    description: "Notifications, currency, and display",
+    description: "Notifications and currency (coming soon)",
   },
   {
     id: "privacy",
