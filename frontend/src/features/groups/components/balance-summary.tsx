@@ -1,6 +1,8 @@
+"use client";
+
 import type { GroupBalanceSummary } from "@/features/groups/types";
 import { BalanceCard } from "@/features/dashboard/components/balance-card";
-import { formatCurrency } from "@/features/dashboard/utils/format-currency";
+import { useCurrency } from "@/hooks/use-currency";
 import { META_LABEL_CLASS, META_TEXT_CLASS } from "@/lib/typography";
 import { cn } from "@/lib/utils";
 import { TrendingUp } from "lucide-react";
@@ -12,6 +14,7 @@ interface BalanceSummaryProps {
 
 /** Group-level balance summary — mirrors Splitwise group totals. */
 export function BalanceSummary({ balances, className }: BalanceSummaryProps) {
+  const { formatCurrency } = useCurrency();
   const isPositive = balances.total >= 0;
   const netLabel = isPositive ? "you are owed in this group" : "you owe in this group";
   const oweShare =

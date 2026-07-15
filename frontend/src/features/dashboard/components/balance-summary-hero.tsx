@@ -1,5 +1,7 @@
+"use client";
+
 import type { BalanceSummary } from "@/features/dashboard/types";
-import { formatCurrency } from "@/features/dashboard/utils/format-currency";
+import { useCurrency } from "@/hooks/use-currency";
 import { BalanceCard } from "@/features/dashboard/components/balance-card";
 import { META_LABEL_CLASS, META_TEXT_CLASS } from "@/lib/typography";
 import { cn } from "@/lib/utils";
@@ -11,6 +13,7 @@ interface BalanceSummaryHeroProps {
 }
 
 export function BalanceSummaryHero({ balances, className }: BalanceSummaryHeroProps) {
+  const { formatCurrency } = useCurrency();
   const isPositive = balances.total >= 0;
   const netLabel = isPositive ? "you are owed overall" : "you owe overall";
   const oweShare =

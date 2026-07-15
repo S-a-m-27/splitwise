@@ -1,6 +1,8 @@
+"use client";
+
 import { ArrowDownLeft, ArrowUpRight, Wallet } from "lucide-react";
 import type { BalanceType } from "@/features/dashboard/types";
-import { formatCurrency } from "@/features/dashboard/utils/format-currency";
+import { useCurrency } from "@/hooks/use-currency";
 import { META_LABEL_CLASS } from "@/lib/typography";
 import { cn } from "@/lib/utils";
 
@@ -57,6 +59,7 @@ const CONFIG: Record<
 
 /** Half-width balance chip — readable at 320px. */
 export function BalanceCard({ type, amount, className }: BalanceCardProps) {
+  const { formatCurrency } = useCurrency();
   const {
     label,
     shortLabel,

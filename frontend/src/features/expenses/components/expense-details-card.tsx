@@ -1,7 +1,9 @@
+"use client";
+
 import { Crown } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import type { ExpenseDetail } from "@/features/expenses/types";
-import { formatExpenseAmount } from "@/features/expenses/utils/format-expense-amount";
+import { useCurrency } from "@/hooks/use-currency";
 import { META_LABEL_CLASS, META_TEXT_CLASS } from "@/lib/typography";
 import { cn } from "@/lib/utils";
 
@@ -11,6 +13,8 @@ interface ExpenseDetailsCardProps {
 }
 
 export function ExpenseDetailsCard({ expense, className }: ExpenseDetailsCardProps) {
+  const { formatMoney } = useCurrency();
+
   return (
     <section
       className={cn(
@@ -35,7 +39,7 @@ export function ExpenseDetailsCard({ expense, className }: ExpenseDetailsCardPro
         <div>
           <dt className={META_LABEL_CLASS}>Per person</dt>
           <dd className="mt-1 text-sm font-bold tabular-nums text-foreground min-[375px]:text-[15px]">
-            {formatExpenseAmount(expense.perPersonAmount)}
+            {formatMoney(expense.perPersonAmount)}
           </dd>
         </div>
 
@@ -87,7 +91,7 @@ export function ExpenseDetailsCard({ expense, className }: ExpenseDetailsCardPro
               </div>
 
               <p className="shrink-0 text-sm font-bold tabular-nums text-foreground">
-                {formatExpenseAmount(participant.perPersonAmount)}
+                {formatMoney(participant.perPersonAmount)}
               </p>
             </li>
           ))}

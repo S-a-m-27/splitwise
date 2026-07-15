@@ -1,4 +1,6 @@
-import { CURRENCY } from "@/lib/currency";
+"use client";
+
+import { useCurrency } from "@/hooks/use-currency";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
@@ -21,6 +23,7 @@ export function AmountInput({
   "aria-invalid": ariaInvalid,
   className,
 }: AmountInputProps) {
+  const { symbol } = useCurrency();
   const isHero = variant === "hero";
 
   return (
@@ -46,7 +49,7 @@ export function AmountInput({
           )}
           aria-hidden="true"
         >
-          {CURRENCY.symbol}
+          {symbol}
         </span>
         <Input
           id={id}

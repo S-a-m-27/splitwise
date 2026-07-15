@@ -6,6 +6,7 @@ export interface UserProfile {
   id: string;
   fullName: string;
   avatarUrl?: string;
+  preferredCurrency: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -25,6 +26,7 @@ export function mapProfileRow(row: Profile): UserProfile {
     id: row.id,
     fullName: row.full_name,
     avatarUrl: row.avatar_url ?? undefined,
+    preferredCurrency: row.preferred_currency,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };

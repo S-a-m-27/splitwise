@@ -5,7 +5,7 @@ import { ChevronRight, Receipt, Users } from "lucide-react";
 import { expenseDetailRoute } from "@/constants/routes";
 import type { ExpenseListItem } from "@/features/expenses/types";
 import { SplitSummary } from "@/features/expenses/components/split-summary";
-import { formatExpenseAmount } from "@/features/expenses/utils/format-expense-amount";
+import { useCurrency } from "@/hooks/use-currency";
 import { META_TEXT_CLASS, META_TEXT_SUBTLE_CLASS } from "@/lib/typography";
 import { cn } from "@/lib/utils";
 
@@ -15,6 +15,8 @@ interface ExpenseCardProps {
 }
 
 export function ExpenseCard({ expense, className }: ExpenseCardProps) {
+  const { formatMoney } = useCurrency();
+
   return (
     <Link
       href={expenseDetailRoute(expense.id)}
@@ -39,7 +41,7 @@ export function ExpenseCard({ expense, className }: ExpenseCardProps) {
             {expense.title}
           </p>
           <p className="shrink-0 text-sm font-bold tabular-nums text-foreground min-[375px]:text-[15px]">
-            {formatExpenseAmount(expense.amount)}
+            {formatMoney(expense.amount)}
           </p>
         </div>
 

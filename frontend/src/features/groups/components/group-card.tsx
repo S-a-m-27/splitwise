@@ -4,7 +4,7 @@ import Link from "next/link";
 import { ChevronRight, Users } from "lucide-react";
 import { groupDetailRoute } from "@/constants/routes";
 import type { GroupListItem } from "@/features/groups/types";
-import { formatCurrency } from "@/features/dashboard/utils/format-currency";
+import { useCurrency } from "@/hooks/use-currency";
 import { META_TEXT_CLASS } from "@/lib/typography";
 import { cn } from "@/lib/utils";
 
@@ -14,6 +14,7 @@ interface GroupCardProps {
 }
 
 export function GroupCard({ group, className }: GroupCardProps) {
+  const { formatCurrency } = useCurrency();
   const isOwed = group.balance >= 0;
   const balanceDisplay = formatCurrency(group.balance);
 

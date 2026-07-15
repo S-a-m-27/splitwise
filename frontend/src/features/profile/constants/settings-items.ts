@@ -19,11 +19,6 @@ export const PROFILE_SETTINGS_ITEMS: readonly SettingsItemConfig[] = [
     href: profileChangePasswordRoute(),
   },
   {
-    id: "preferences",
-    label: "App Preferences",
-    description: "Notifications and currency (coming soon)",
-  },
-  {
     id: "privacy",
     label: "Privacy",
     description: "Data and visibility controls",

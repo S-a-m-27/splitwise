@@ -35,7 +35,6 @@ export interface AppAboutInfo {
 export type SettingsItemId =
   | "edit-profile"
   | "change-password"
-  | "preferences"
   | "privacy"
   | "about"
   | "logout";

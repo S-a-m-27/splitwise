@@ -1,8 +1,10 @@
+"use client";
+
 import Link from "next/link";
 import { Receipt } from "lucide-react";
 import { expenseDetailRoute } from "@/constants/routes";
 import type { GroupExpense } from "@/features/groups/types";
-import { formatCurrency } from "@/features/dashboard/utils/format-currency";
+import { useCurrency } from "@/hooks/use-currency";
 import { META_TEXT_CLASS } from "@/lib/typography";
 import { cn } from "@/lib/utils";
 
@@ -12,6 +14,8 @@ interface ExpenseCardProps {
 }
 
 export function ExpenseCard({ expense, className }: ExpenseCardProps) {
+  const { formatCurrency } = useCurrency();
+
   return (
     <Link
       href={expenseDetailRoute(expense.id)}

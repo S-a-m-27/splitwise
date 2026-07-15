@@ -1,5 +1,5 @@
 import { authService } from "@/features/auth/services/auth.service";
-import { mapProfileRow } from "@/features/auth/types";
+import { mapProfileRow, type UserProfile } from "@/features/auth/types";
 import { balancesService } from "@/features/balances/services/balances.service";
 import {
   ProfileServiceError,
@@ -12,8 +12,10 @@ import {
 } from "@/features/profile/utils/map-profile";
 import {
   changePasswordSchema,
+  updatePreferredCurrencySchema,
   updateProfileSchema,
   type ChangePasswordInput,
+  type UpdatePreferredCurrencyInput,
   type UpdateProfileInput,
 } from "@/features/profile/validation/profile.schema";
 import { createClient as createBrowserClient } from "@/lib/supabase/client";
@@ -86,7 +88,7 @@ export const profileService = {
       .from("profiles")
       .update({ full_name: parsed.data.fullName })
       .eq("id", user.id)
-      .select("id, full_name, avatar_url, created_at, updated_at")
+      .select("id, full_name, avatar_url, preferred_currency, created_at, updated_at")
       .single();
 
     if (error) throwIfSupabaseError(error);
@@ -107,6 +109,38 @@ export const profileService = {
     }
 
     return mapAuthToProfileUser(mapProfileRow(data), user);
+  },
+
+  /** Updates the user's preferred display currency. */
+  async updatePreferredCurrency(
+    input: UpdatePreferredCurrencyInput,
+  ): Promise<UserProfile> {
+    const parsed = updatePreferredCurrencySchema.safeParse(input);
+
+    if (!parsed.success) {
+      throw new ProfileServiceError(
+        "VALIDATION_ERROR",
+        parsed.error.issues[0]?.message ?? "Invalid currency selection.",
+      );
+    }
+
+    const user = await requireSession();
+    const supabase = createBrowserClient();
+
+    const { data, error } = await supabase
+      .from("profiles")
+      .update({ preferred_currency: parsed.data.currencyCode })
+      .eq("id", user.id)
+      .select("id, full_name, avatar_url, preferred_currency, created_at, updated_at")
+      .single();
+
+    if (error) throwIfSupabaseError(error);
+
+    if (!data) {
+      throw new ProfileServiceError("NOT_FOUND", "Profile not found.");
+    }
+
+    return mapProfileRow(data);
   },
 
   /** Verifies the current password and sets a new one via Supabase Auth. */

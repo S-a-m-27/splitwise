@@ -13,7 +13,7 @@ import { PageHeader, PageStack, SECTION_STACK_CLASS } from "@/components/layout/
 import { profileEditRoute } from "@/constants/routes";
 import { DashboardErrorState } from "@/features/dashboard/components/dashboard-error-state";
 import { DashboardShell } from "@/features/dashboard/components/dashboard-shell";
-import { formatCurrency } from "@/features/dashboard/utils/format-currency";
+import { useCurrency } from "@/hooks/use-currency";
 import { AboutCard } from "@/features/profile/components/about-card";
 import { LogoutDialog } from "@/features/profile/components/logout-dialog";
 import { ProfileHeader } from "@/features/profile/components/profile-header";
@@ -24,6 +24,7 @@ import {
 import { SectionHeader } from "@/features/profile/components/section-header";
 import { SettingsList } from "@/features/profile/components/settings-item";
 import { ThemeSelector } from "@/features/profile/components/theme-selector";
+import { CurrencySelector } from "@/features/profile/components/currency-selector";
 import { StatsCard } from "@/features/profile/components/stats-card";
 import { APP_ABOUT } from "@/features/profile/constants/app-about";
 import { PROFILE_SETTINGS_ITEMS } from "@/features/profile/constants/settings-items";
@@ -32,17 +33,13 @@ import type { SettingsItemConfig } from "@/features/profile/types";
 
 export function ProfilePageContent() {
   const [logoutOpen, setLogoutOpen] = useState(false);
+  const { formatCurrency } = useCurrency();
   const profileQuery = useProfile();
   const statsQuery = useProfileStats();
 
   function handleSettingsAction(item: SettingsItemConfig) {
     if (item.id === "logout") {
       setLogoutOpen(true);
-      return;
-    }
-
-    if (item.id === "preferences") {
-      toast.info("More preferences like notifications and currency are coming soon.");
       return;
     }
 
@@ -139,6 +136,7 @@ export function ProfilePageContent() {
             description="Account, security, and app information."
           />
           <ThemeSelector />
+          <CurrencySelector />
           <SettingsList items={PROFILE_SETTINGS_ITEMS} onAction={handleSettingsAction} />
         </section>
 

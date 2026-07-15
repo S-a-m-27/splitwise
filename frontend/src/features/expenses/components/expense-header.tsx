@@ -1,7 +1,9 @@
+"use client";
+
 import { Calendar, Users } from "lucide-react";
 import type { ExpenseDetail } from "@/features/expenses/types";
 import { SplitSummary } from "@/features/expenses/components/split-summary";
-import { formatExpenseAmount } from "@/features/expenses/utils/format-expense-amount";
+import { useCurrency } from "@/hooks/use-currency";
 import { META_LABEL_CLASS, META_TEXT_CLASS } from "@/lib/typography";
 import { cn } from "@/lib/utils";
 
@@ -11,6 +13,8 @@ interface ExpenseHeaderProps {
 }
 
 export function ExpenseHeader({ expense, className }: ExpenseHeaderProps) {
+  const { formatMoney } = useCurrency();
+
   return (
     <header
       className={cn(
@@ -24,7 +28,7 @@ export function ExpenseHeader({ expense, className }: ExpenseHeaderProps) {
       </h2>
 
       <p className="mt-3 text-3xl font-bold tabular-nums tracking-tight text-foreground min-[375px]:text-4xl">
-        {formatExpenseAmount(expense.amount)}
+        {formatMoney(expense.amount)}
       </p>
 
       <div className="mt-4 flex flex-wrap gap-2">

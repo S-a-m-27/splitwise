@@ -1,10 +1,6 @@
-import { formatMoney } from "@/lib/currency";
+import { formatSignedMoney } from "@/lib/currency";
 
-/** Formats a number as Rs — includes +/- for balances. */
+/** Formats a number with the active currency — includes +/- for balances. */
 export function formatCurrency(amount: number): string {
-  const formatted = formatMoney(amount);
-
-  if (amount > 0) return `+${formatted}`;
-  if (amount < 0) return `-${formatted}`;
-  return formatted;
+  return formatSignedMoney(amount);
 }

@@ -1,7 +1,9 @@
+"use client";
+
 import { Crown, Shield, UserRound } from "lucide-react";
 import type { GroupMember } from "@/features/groups/types";
 import { UserAvatar } from "@/features/dashboard/components/user-avatar";
-import { formatCurrency } from "@/features/dashboard/utils/format-currency";
+import { useCurrency } from "@/hooks/use-currency";
 import { META_TEXT_CLASS } from "@/lib/typography";
 import { cn } from "@/lib/utils";
 
@@ -59,6 +61,7 @@ function MemberRoleBadge({ member }: { member: GroupMember }) {
 }
 
 export function MemberCard({ member, className }: MemberCardProps) {
+  const { formatCurrency } = useCurrency();
   const isOwed = member.balance >= 0;
   const balanceLabel =
     member.balance === 0

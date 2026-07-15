@@ -7,7 +7,6 @@ import {
   Info,
   KeyRound,
   LogOut,
-  Settings2,
   Shield,
   UserPen,
   type LucideIcon,
@@ -19,7 +18,6 @@ import { cn } from "@/lib/utils";
 const SETTINGS_ICONS: Record<SettingsItemConfig["id"], LucideIcon> = {
   "edit-profile": UserPen,
   "change-password": KeyRound,
-  preferences: Settings2,
   privacy: Shield,
   about: Info,
   logout: LogOut,

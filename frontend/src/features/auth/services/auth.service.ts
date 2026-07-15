@@ -132,7 +132,7 @@ export const authService = {
     const supabase = createBrowserClient();
     const { data, error } = await supabase
       .from("profiles")
-      .select("id, full_name, avatar_url, created_at, updated_at")
+      .select("id, full_name, avatar_url, preferred_currency, created_at, updated_at")
       .eq("id", userId)
       .single();
 

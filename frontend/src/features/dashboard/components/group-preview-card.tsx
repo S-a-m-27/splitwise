@@ -5,7 +5,7 @@ import { ChevronRight, Users } from "lucide-react";
 import { PANEL_ROW_CLASS } from "@/components/layout/page-layout";
 import { groupDetailRoute } from "@/constants/routes";
 import type { GroupPreview } from "@/features/dashboard/types";
-import { formatCurrency } from "@/features/dashboard/utils/format-currency";
+import { useCurrency } from "@/hooks/use-currency";
 import { META_TEXT_CLASS } from "@/lib/typography";
 import { cn } from "@/lib/utils";
 
@@ -17,6 +17,7 @@ interface GroupPreviewCardProps {
 
 /** Compact group row — matches ActivityCard inside a shared section panel. */
 export function GroupPreviewCard({ group, isLast = false, className }: GroupPreviewCardProps) {
+  const { formatCurrency } = useCurrency();
   const isOwed = group.balance >= 0;
   const balanceDisplay = formatCurrency(group.balance);
 

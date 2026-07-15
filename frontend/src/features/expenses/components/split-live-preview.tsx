@@ -8,9 +8,8 @@ import { SplitTypeSelector } from "@/features/expenses/components/split-type-sel
 import { getSplitTypeLabel } from "@/features/expenses/constants/split-types";
 import type { ExpenseParticipant, SplitType } from "@/features/expenses/types";
 import { buildSplitPreview } from "@/features/expenses/utils/split-preview";
-import { formatExpenseAmount } from "@/features/expenses/utils/format-expense-amount";
+import { useCurrency } from "@/hooks/use-currency";
 import { META_LABEL_CLASS, META_TEXT_CLASS } from "@/lib/typography";
-import { CURRENCY } from "@/lib/currency";
 import { cn } from "@/lib/utils";
 
 interface SplitLivePreviewProps {
@@ -38,6 +37,7 @@ export function SplitLivePreview({
   onSplitValueChange,
   className,
 }: SplitLivePreviewProps) {
+  const { formatMoney, symbol } = useCurrency();
   const parsedAmount = Number.parseFloat(amount);
   const hasValidAmount = !Number.isNaN(parsedAmount) && parsedAmount > 0;
   const count = participantIds.length;
@@ -81,7 +81,7 @@ export function SplitLivePreview({
     if (splitType === "equal") {
       return (
         <p className="shrink-0 text-sm font-bold tabular-nums text-primary">
-          {formatExpenseAmount(displayAmount)}
+          {formatMoney(displayAmount)}
         </p>
       );
     }
@@ -90,7 +90,7 @@ export function SplitLivePreview({
       return (
         <div className="relative w-24 shrink-0">
           <span className="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-xs font-semibold text-muted-foreground">
-            {CURRENCY.symbol}
+            {symbol}
           </span>
           <Input
             type="text"
@@ -171,7 +171,7 @@ export function SplitLivePreview({
 
         {hasValidAmount ? (
           <p className="mt-1 font-heading text-2xl font-bold tabular-nums text-foreground min-[375px]:text-3xl">
-            {formatExpenseAmount(parsedAmount)}
+            {formatMoney(parsedAmount)}
           </p>
         ) : (
           <p className="mt-1 text-lg font-semibold text-muted-foreground">Enter an amount</p>
@@ -241,7 +241,7 @@ export function SplitLivePreview({
                     </p>
                     {splitType !== "equal" && (
                       <p className="text-xs tabular-nums text-muted-foreground">
-                        → {formatExpenseAmount(line.displayAmount)}
+                        → {formatMoney(line.displayAmount)}
                       </p>
                     )}
                   </div>
@@ -260,7 +260,7 @@ export function SplitLivePreview({
           </p>
           <p className="mt-1.5 text-lg font-bold tabular-nums text-primary min-[375px]:text-xl">
             {preview?.lines[0]
-              ? formatExpenseAmount(preview.lines[0].displayAmount)
+              ? formatMoney(preview.lines[0].displayAmount)
               : "—"}
           </p>
         </div>
