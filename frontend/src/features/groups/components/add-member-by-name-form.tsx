@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 interface AddMemberByNameFormProps {
   onSubmit: (name: string) => void;
   isSubmitting?: boolean;
+  /** Compact layout for embedding inside another form (avoids nested <form>). */
   compact?: boolean;
   className?: string;
 }
@@ -23,8 +24,7 @@ export function AddMemberByNameForm({
   const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  function submitName() {
     const trimmed = name.trim();
 
     if (!trimmed) {
@@ -42,16 +42,14 @@ export function AddMemberByNameForm({
     setName("");
   }
 
-  return (
-    <form
-      onSubmit={handleSubmit}
-      className={cn(
-        compact
-          ? "flex flex-col gap-3"
-          : "rounded-xl border border-border/80 bg-card p-4 shadow-sm min-[375px]:rounded-2xl min-[375px]:p-5",
-        className,
-      )}
-    >
+  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    event.stopPropagation();
+    submitName();
+  }
+
+  const fields = (
+    <>
       {!compact && (
         <>
           <h2 className="font-heading text-base font-bold text-foreground">Add by name</h2>
@@ -85,6 +83,14 @@ export function AddMemberByNameForm({
                 setName(event.target.value);
                 if (error) setError(null);
               }}
+              onKeyDown={(event) => {
+                if (!compact) return;
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  submitName();
+                }
+              }}
               aria-invalid={!!error}
               className="h-11 pl-9"
             />
@@ -97,18 +103,40 @@ export function AddMemberByNameForm({
         </Field>
 
         <Button
-          type="submit"
+          type={compact ? "button" : "submit"}
           className={cn(
             "h-11 shrink-0 gap-2",
             !compact && "min-[375px]:min-w-[8.5rem]",
             compact && "w-full",
           )}
           disabled={isSubmitting}
+          onClick={compact ? () => submitName() : undefined}
         >
           <UserPlus className="size-4" aria-hidden="true" />
           {isSubmitting ? "Adding…" : compact ? "Add person" : "Add guest"}
         </Button>
       </div>
+    </>
+  );
+
+  // Compact mode is embedded inside ExpenseForm — never nest <form> elements.
+  if (compact) {
+    return (
+      <div className={cn("flex flex-col gap-3", className)} data-add-member-embedded>
+        {fields}
+      </div>
+    );
+  }
+
+  return (
+    <form
+      onSubmit={handleSubmit}
+      className={cn(
+        "rounded-xl border border-border/80 bg-card p-4 shadow-sm min-[375px]:rounded-2xl min-[375px]:p-5",
+        className,
+      )}
+    >
+      {fields}
     </form>
   );
 }
