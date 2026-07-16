@@ -28,7 +28,7 @@ export function mapMemberToParticipant(
   member: ConversationMember,
   showEmail = false,
 ): ChatParticipant {
-  const name = member.displayName ?? "Member";
+  const name = member.displayName?.trim() || member.email || "Unknown user";
   return {
     id: member.userId,
     name,
@@ -101,7 +101,10 @@ export function mapMessageToUi(
 ): ChatMessage {
   const sender = members.find((member) => member.userId === message.senderId);
   const senderName =
-    message.senderName ?? sender?.displayName ?? (message.senderId === currentUserId ? "You" : "Member");
+    message.senderName?.trim() ||
+    sender?.displayName?.trim() ||
+    sender?.email ||
+    (message.senderId === currentUserId ? "You" : "Unknown user");
   const duplicateNameCount = members.filter(
     (member) =>
       !member.leftAt &&

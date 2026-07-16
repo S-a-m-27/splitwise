@@ -173,11 +173,12 @@ export function useConversationLifecycle(conversationId: string) {
     snapshot && user
       ? state.typingUserIds
           .filter((typingUserId) => typingUserId !== user.id)
-          .map(
-            (typingUserId) =>
-              snapshot.members.find((member) => member.userId === typingUserId)
-                ?.displayName ?? "Someone",
-          )
+          .map((typingUserId) => {
+            const member = snapshot.members.find(
+              (candidate) => candidate.userId === typingUserId,
+            );
+            return member?.displayName?.trim() || member?.email || "Another participant";
+          })
       : [];
   return {
     state,

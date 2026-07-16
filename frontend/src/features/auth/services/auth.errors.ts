@@ -50,7 +50,7 @@ export function normalizeAuthError(
   const code = ERROR_MESSAGE_MAP[message] ?? "unknown";
 
   const friendlyMessages: Record<AuthErrorCode, string> = {
-    invalid_credentials: "Invalid email or password.",
+    invalid_credentials: "The email or password you entered is incorrect.",
     email_not_confirmed: "Please verify your email before signing in.",
     user_already_exists: "An account with this email already exists.",
     weak_password: "Password does not meet security requirements.",
