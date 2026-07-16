@@ -82,8 +82,10 @@ export function normalizeGroupsError(error: unknown): NormalizedGroupsError {
 
     if (
       message.includes("PGRST116") ||
+      message.includes("Cannot coerce the result to a single JSON object") ||
       message.toLowerCase().includes("not found") ||
-      message.includes("0 rows")
+      message.includes("0 rows") ||
+      message.includes("multiple (or no) rows")
     ) {
       return { code: "NOT_FOUND", message: "Group not found or you do not have access." };
     }

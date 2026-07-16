@@ -116,3 +116,35 @@ supabase gen types typescript --project-id <ref> > frontend/src/types/database.t
 - Only the **anon key** is used client-side.
 - RLS is enabled on day one.
 - Passwords are stored only in `auth.users` (Supabase-managed).
+- **SMTP / Resend credentials** and email sending run only in Edge Functions (`supabase/functions/invitations`).
+
+## Invitation Edge Functions
+
+Member invitation **mutations** go through the `invitations` Edge Function (not direct client RPC + browser email).
+
+### Gmail SMTP
+
+1. Enable **2-Step Verification** on the Google account: https://myaccount.google.com/security
+2. Create an **App Password**: https://myaccount.google.com/apppasswords (choose Mail / Other)
+3. Set Edge secrets (use the 16-character app password, not your Gmail login password):
+
+```bash
+supabase secrets set SMTP_HOST=smtp.gmail.com
+supabase secrets set SMTP_PORT=587
+supabase secrets set SMTP_USER=your@gmail.com
+supabase secrets set SMTP_PASS=xxxx-xxxx-xxxx-xxxx
+supabase secrets set SMTP_FROM_EMAIL="ExpenseShare <your@gmail.com>"
+supabase secrets set APP_URL=http://localhost:3000
+supabase functions deploy invitations
+```
+
+SMTP is used when `SMTP_USER` and `SMTP_PASS` are set. Remove or unset `RESEND_API_KEY` if you are not using Resend.
+
+### Resend (alternative)
+
+```bash
+supabase secrets set RESEND_API_KEY=re_xxx RESEND_FROM_EMAIL="Bitwisse <invites@yourdomain.com>" APP_URL=http://localhost:3000
+supabase functions deploy invitations
+```
+
+See `docs/invitations/ARCHITECTURE.md` and `docs/invitations/PHASE3_EXECUTION.md`.

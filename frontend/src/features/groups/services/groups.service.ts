@@ -94,27 +94,30 @@ function throwIfSupabaseError(error: { message: string; code?: string } | null):
 async function resolveInviteCode(groupId: string): Promise<string> {
   const supabase = createBrowserClient();
 
-  const { data: invitation, error: inviteError } = await supabase
+  // Share-link rows only — member invitations also live in this table.
+  const { data: shareInvitation, error: shareError } = await supabase
     .from("group_invitations")
     .select("invite_code")
     .eq("group_id", groupId)
+    .eq("kind", "share_link")
     .eq("active", true)
+    .order("created_at", { ascending: false })
+    .limit(1)
     .maybeSingle();
 
-  if (inviteError) throwIfSupabaseError(inviteError);
-  if (invitation?.invite_code) return invitation.invite_code;
+  if (shareError) throwIfSupabaseError(shareError);
+  if (shareInvitation?.invite_code) return shareInvitation.invite_code;
 
   const { data: group, error: groupError } = await supabase
     .from("groups")
     .select("invite_code")
     .eq("id", groupId)
-    .single();
+    .maybeSingle();
 
   if (groupError) throwIfSupabaseError(groupError);
-  if (!group) {
-    throw new GroupsServiceError("NOT_FOUND", "Group not found or you do not have access.");
-  }
-  return group.invite_code;
+  if (group?.invite_code) return group.invite_code;
+
+  throw new GroupsServiceError("NOT_FOUND", "Group invite link is unavailable.");
 }
 
 export const groupsService = {
@@ -140,7 +143,7 @@ export const groupsService = {
       .from("groups")
       .select(GROUP_DETAIL_SELECT)
       .eq("id", groupId)
-      .single();
+      .maybeSingle();
 
     if (error) throwIfSupabaseError(error);
     if (!data) {

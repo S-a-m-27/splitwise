@@ -22,6 +22,9 @@ const REALTIME_TABLES: RealtimeTable[] = [
   "group_members",
   "group_guests",
   "groups",
+  "group_invitations",
+  "notifications",
+  "group_activities",
 ];
 
 const DEBOUNCE_MS = 350;

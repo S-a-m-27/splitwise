@@ -1,6 +1,7 @@
 "use client";
 
 import { Dialog } from "@base-ui/react/dialog";
+import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -10,9 +11,11 @@ interface ConfirmationDialogProps {
   title: string;
   description: string;
   confirmLabel: string;
+  confirmingLabel?: string;
   cancelLabel?: string;
   onConfirm: () => void;
   variant?: "default" | "destructive";
+  isConfirming?: boolean;
 }
 
 export function ConfirmationDialog({
@@ -21,12 +24,19 @@ export function ConfirmationDialog({
   title,
   description,
   confirmLabel,
+  confirmingLabel = "Please wait…",
   cancelLabel = "Cancel",
   onConfirm,
   variant = "default",
+  isConfirming = false,
 }: ConfirmationDialogProps) {
+  function handleOpenChange(nextOpen: boolean) {
+    if (!nextOpen && isConfirming) return;
+    onOpenChange(nextOpen);
+  }
+
   return (
-    <Dialog.Root open={open} onOpenChange={onOpenChange}>
+    <Dialog.Root open={open} onOpenChange={handleOpenChange}>
       <Dialog.Portal>
         <Dialog.Backdrop
           className={cn(
@@ -51,25 +61,42 @@ export function ConfirmationDialog({
             {description}
           </Dialog.Description>
 
+          {isConfirming && (
+            <p
+              className="mt-3 flex items-center gap-2 text-sm font-medium text-muted-foreground"
+              role="status"
+              aria-live="polite"
+            >
+              <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden="true" />
+              Working on it…
+            </p>
+          )}
+
           <div className="mt-6 flex flex-col-reverse gap-2 min-[375px]:flex-row min-[375px]:justify-end">
             <Button
               type="button"
               variant="outline"
               className="h-11 min-[375px]:h-9"
-              onClick={() => onOpenChange(false)}
+              disabled={isConfirming}
+              onClick={() => handleOpenChange(false)}
             >
               {cancelLabel}
             </Button>
             <Button
               type="button"
               variant={variant === "destructive" ? "destructive" : "default"}
-              className="h-11 min-[375px]:h-9"
-              onClick={() => {
-                onConfirm();
-                onOpenChange(false);
-              }}
+              className="h-11 gap-2 min-[375px]:h-9"
+              disabled={isConfirming}
+              onClick={onConfirm}
             >
-              {confirmLabel}
+              {isConfirming ? (
+                <>
+                  <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                  {confirmingLabel}
+                </>
+              ) : (
+                confirmLabel
+              )}
             </Button>
           </div>
         </Dialog.Popup>

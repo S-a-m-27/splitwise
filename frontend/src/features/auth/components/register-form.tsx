@@ -1,13 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
+import { toast } from "sonner";
 import { User, Mail, Lock, Eye, EyeOff, Loader2, ArrowRight } from "lucide-react";
 import { ROUTES } from "@/constants/routes";
+import { getSafeRedirect } from "@/lib/safe-redirect";
+import { useClientSearchParams } from "@/lib/use-client-search-params";
+import { resolveAuthenticatedRegisterVisit } from "@/lib/invitation-register";
+import { AuthGateLoader } from "@/features/auth/components/auth-gate-loader";
 import { registerSchema, type RegisterInput } from "../validation/auth.schema";
 import { useAuth } from "../hooks/use-auth";
+import { authService } from "../services/auth.service";
+import { useAuthStore } from "../store/auth-store";
 import {
   AUTH_ERROR_CLASS,
   AUTH_INPUT_CLASS,
@@ -48,20 +57,110 @@ const segColour: Record<1 | 2 | 3 | 4, string> = {
 };
 
 export function RegisterForm() {
-  const { register: signUp, isRegistering } = useAuth();
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const searchParams = useClientSearchParams();
+  const invitedEmailParam = searchParams?.get("email")?.trim() ?? "";
+  const redirectParam = searchParams?.get("redirect") ?? null;
+  const redirectTo = getSafeRedirect(redirectParam);
+  const { register: signUp, isRegistering, isAuthenticated, isLoading, user } = useAuth();
   const [showPwd, setShowPwd] = useState(false);
   const [pwdValue, setPwdValue] = useState("");
+  const [isSwitchingAccount, setIsSwitchingAccount] = useState(false);
 
   const {
     register: field,
     handleSubmit,
+    reset,
     formState: { errors },
   } = useForm<RegisterInput>({
     resolver: zodResolver(registerSchema),
-    defaultValues: { fullName: "", email: "", password: "", confirmPassword: "" },
+    defaultValues: {
+      fullName: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+    },
   });
 
-  const onSubmit = (data: RegisterInput) => signUp(data);
+  useEffect(() => {
+    if (!searchParams) return;
+    reset({
+      fullName: "",
+      email: searchParams.get("email")?.trim() ?? "",
+      password: "",
+      confirmPassword: "",
+    });
+  }, [searchParams, reset]);
+
+  useEffect(() => {
+    if (!searchParams || isLoading || !isAuthenticated) return;
+
+    const registerDecision = resolveAuthenticatedRegisterVisit({
+      pathname: ROUTES.register,
+      invitedEmail: searchParams.get("email"),
+      redirectParam: searchParams.get("redirect"),
+      sessionEmail: user?.email,
+    });
+
+    if (registerDecision.action === "to_invitation") {
+      router.replace(registerDecision.path);
+      return;
+    }
+
+    if (registerDecision.action !== "wrong_account" || isSwitchingAccount) return;
+
+    let cancelled = false;
+    setIsSwitchingAccount(true);
+
+    void (async () => {
+      const result = await authService.signOut();
+      if (cancelled) return;
+
+      if (result.error) {
+        setIsSwitchingAccount(false);
+        toast.error("Could not sign out. Please try again.");
+        return;
+      }
+
+      useAuthStore.getState().clearAuth();
+      queryClient.clear();
+      setIsSwitchingAccount(false);
+      toast.message("Signed out", {
+        description: `Create an account for ${registerDecision.invitedEmail} to accept the invitation.`,
+      });
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    searchParams,
+    isLoading,
+    isAuthenticated,
+    isSwitchingAccount,
+    user?.email,
+    router,
+    queryClient,
+  ]);
+
+  if (!searchParams || isLoading || isSwitchingAccount) {
+    return (
+      <AuthGateLoader
+        message={isSwitchingAccount ? "Preparing sign up…" : "Loading sign up…"}
+      />
+    );
+  }
+
+  const loginHref =
+    redirectTo || invitedEmailParam
+      ? `${ROUTES.login}?${new URLSearchParams({
+          ...(invitedEmailParam ? { email: invitedEmailParam } : {}),
+          ...(redirectTo ? { redirect: redirectTo } : {}),
+        }).toString()}`
+      : ROUTES.login;
+
+  const onSubmit = (data: RegisterInput) => signUp({ fields: data, redirectTo });
   const strength = getStrength(pwdValue);
 
   return (
@@ -110,6 +209,7 @@ export function RegisterForm() {
             placeholder="name@example.com"
             autoComplete="email"
             autoCapitalize="none"
+            readOnly={!!invitedEmailParam}
             disabled={isRegistering}
             aria-invalid={!!errors.email}
             aria-describedby={errors.email ? "reg-email-error" : undefined}
@@ -258,7 +358,7 @@ export function RegisterForm() {
       <p className="pt-1 text-center text-[13px] text-muted-foreground">
         Already have an account?{" "}
         <Link
-          href={ROUTES.login}
+          href={loginHref}
           className="font-semibold text-primary underline-offset-4 hover:underline"
         >
           Sign in

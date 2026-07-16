@@ -15,6 +15,7 @@ import { groupsKeys } from "@/features/groups/constants/query-keys";
 import {
   getGroupsErrorMessage,
   isGroupsSessionError,
+  normalizeGroupsError,
 } from "@/features/groups/services/groups.errors";
 import { groupsService } from "@/features/groups/services/groups.service";
 import type {
@@ -108,6 +109,11 @@ export function useGroup(groupId: string) {
     queryFn: () => groupsService.getGroup(groupId),
     enabled: isAuthenticated && !!userId && !!groupId && !authLoading,
     staleTime: GROUPS_STALE_TIME_MS,
+    retry: (failureCount, error) => {
+      if (failureCount >= 2) return false;
+      return normalizeGroupsError(error).code === "NOT_FOUND";
+    },
+    retryDelay: 400,
   });
 
   return {

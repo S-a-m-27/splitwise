@@ -48,6 +48,10 @@ export function toRealtimeChangeContext(
     case "group_members":
     case "group_guests":
     case "groups":
+    case "group_invitations":
+      return { table, groupId: readGroupId(payload) };
+    case "notifications":
+    case "group_activities":
       return { table, groupId: readGroupId(payload) };
     default:
       return { table };

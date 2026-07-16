@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { ROUTES } from "@/constants/routes";
+import { resolveAuthenticatedRegisterVisit } from "@/lib/invitation-register";
 import { updateSession } from "@/lib/supabase/middleware";
 import { isAuthRoute, isProtectedRoute } from "@/middleware/protected-routes";
 
@@ -15,6 +16,22 @@ export async function middleware(request: NextRequest) {
   }
 
   if (isAuthRoute(pathname) && user) {
+    const registerDecision = resolveAuthenticatedRegisterVisit({
+      pathname,
+      invitedEmail: request.nextUrl.searchParams.get("email"),
+      redirectParam: request.nextUrl.searchParams.get("redirect"),
+      sessionEmail: user.email,
+    });
+
+    if (registerDecision.action === "to_invitation") {
+      const invitationUrl = new URL(registerDecision.path, request.nextUrl.origin);
+      return NextResponse.redirect(invitationUrl);
+    }
+
+    if (registerDecision.action === "wrong_account") {
+      return response;
+    }
+
     const dashboardUrl = request.nextUrl.clone();
     dashboardUrl.pathname = ROUTES.dashboard;
     dashboardUrl.search = "";

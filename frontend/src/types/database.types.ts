@@ -15,6 +15,30 @@ export type Json =
 export type GroupType = "trip" | "home" | "couple" | "friends" | "other";
 export type GroupMemberRole = "owner" | "admin" | "member";
 export type ExpenseSplitType = "equal";
+export type InvitationKind = "share_link" | "member";
+export type InvitationStatus = "pending" | "accepted" | "declined" | "expired" | "cancelled";
+export type InvitationDeliveryChannel =
+  | "email"
+  | "in_app"
+  | "push"
+  | "sms"
+  | "whatsapp"
+  | "qr_code"
+  | "share_link";
+export type InvitationAcceptedVia = "email" | "application" | "share_link";
+export type NotificationType =
+  | "invitation_received"
+  | "invitation_linked"
+  | "invitation_accepted"
+  | "invitation_declined";
+
+export type GroupActivityType =
+  | "invitation_sent"
+  | "invitation_accepted"
+  | "invitation_declined"
+  | "invitation_cancelled"
+  | "invitation_expired"
+  | "member_joined";
 
 export interface Database {
   public: {
@@ -180,29 +204,59 @@ export interface Database {
         Row: {
           id: string;
           group_id: string;
-          invite_code: string;
+          kind: InvitationKind;
+          status: InvitationStatus | null;
+          invite_code: string | null;
+          invited_email: string | null;
+          invited_user_id: string | null;
           created_by: string;
           expires_at: string | null;
-          created_at: string;
           active: boolean;
+          delivery_channels: InvitationDeliveryChannel[];
+          accepted_via: InvitationAcceptedVia | null;
+          created_at: string;
+          updated_at: string;
+          responded_at: string | null;
+          last_reminder_sent_at: string | null;
+          metadata: Json;
         };
         Insert: {
           id?: string;
           group_id: string;
-          invite_code: string;
+          kind?: InvitationKind;
+          status?: InvitationStatus | null;
+          invite_code?: string | null;
+          invited_email?: string | null;
+          invited_user_id?: string | null;
           created_by: string;
           expires_at?: string | null;
-          created_at?: string;
           active?: boolean;
+          delivery_channels?: InvitationDeliveryChannel[];
+          accepted_via?: InvitationAcceptedVia | null;
+          created_at?: string;
+          updated_at?: string;
+          responded_at?: string | null;
+          last_reminder_sent_at?: string | null;
+          metadata?: Json;
         };
         Update: {
           id?: string;
           group_id?: string;
-          invite_code?: string;
+          kind?: InvitationKind;
+          status?: InvitationStatus | null;
+          invite_code?: string | null;
+          invited_email?: string | null;
+          invited_user_id?: string | null;
           created_by?: string;
           expires_at?: string | null;
-          created_at?: string;
           active?: boolean;
+          delivery_channels?: InvitationDeliveryChannel[];
+          accepted_via?: InvitationAcceptedVia | null;
+          created_at?: string;
+          updated_at?: string;
+          responded_at?: string | null;
+          last_reminder_sent_at?: string | null;
+          metadata?: Json;
         };
         Relationships: [
           {
@@ -217,6 +271,112 @@ export interface Database {
             columns: ["created_by"];
             isOneToOne: false;
             referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "group_invitations_invited_user_id_fkey";
+            columns: ["invited_user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      notifications: {
+        Row: {
+          id: string;
+          user_id: string;
+          type: NotificationType;
+          invitation_id: string | null;
+          group_id: string | null;
+          title: string;
+          body: string;
+          read_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          type: NotificationType;
+          invitation_id?: string | null;
+          group_id?: string | null;
+          title: string;
+          body: string;
+          read_at?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          type?: NotificationType;
+          invitation_id?: string | null;
+          group_id?: string | null;
+          title?: string;
+          body?: string;
+          read_at?: string | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "notifications_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "notifications_invitation_id_fkey";
+            columns: ["invitation_id"];
+            isOneToOne: false;
+            referencedRelation: "group_invitations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "notifications_group_id_fkey";
+            columns: ["group_id"];
+            isOneToOne: false;
+            referencedRelation: "groups";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      group_activities: {
+        Row: {
+          id: string;
+          group_id: string;
+          actor_user_id: string | null;
+          type: GroupActivityType;
+          invitation_id: string | null;
+          description: string;
+          metadata: Json;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          group_id: string;
+          actor_user_id?: string | null;
+          type: GroupActivityType;
+          invitation_id?: string | null;
+          description: string;
+          metadata?: Json;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          group_id?: string;
+          actor_user_id?: string | null;
+          type?: GroupActivityType;
+          invitation_id?: string | null;
+          description?: string;
+          metadata?: Json;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "group_activities_group_id_fkey";
+            columns: ["group_id"];
+            isOneToOne: false;
+            referencedRelation: "groups";
             referencedColumns: ["id"];
           },
         ];
@@ -446,6 +606,90 @@ export interface Database {
         Args: { p_group_id: string; p_user_id?: string };
         Returns: boolean;
       };
+      is_group_admin_or_owner: {
+        Args: { p_group_id: string; p_user_id?: string };
+        Returns: boolean;
+      };
+      is_invitation_recipient: {
+        Args: {
+          p_invited_user_id: string | null;
+          p_invited_email: string | null;
+          p_user_id?: string;
+        };
+        Returns: boolean;
+      };
+      link_pending_invitations_to_user: {
+        Args: { p_user_id: string; p_email: string };
+        Returns: number;
+      };
+      create_member_invitation: {
+        Args: {
+          p_group_id: string;
+          p_invited_email: string;
+          p_delivery_channels?: InvitationDeliveryChannel[];
+          p_expires_at?: string | null;
+          p_metadata?: Json;
+        };
+        Returns: Database["public"]["Tables"]["group_invitations"]["Row"];
+      };
+      accept_member_invitation: {
+        Args: {
+          p_invitation_id: string;
+          p_accepted_via?: InvitationAcceptedVia;
+        };
+        Returns: Database["public"]["Tables"]["group_invitations"]["Row"];
+      };
+      decline_member_invitation: {
+        Args: { p_invitation_id: string };
+        Returns: Database["public"]["Tables"]["group_invitations"]["Row"];
+      };
+      cancel_member_invitation: {
+        Args: { p_invitation_id: string };
+        Returns: Database["public"]["Tables"]["group_invitations"]["Row"];
+      };
+      expire_member_invitation: {
+        Args: { p_invitation_id: string };
+        Returns: Database["public"]["Tables"]["group_invitations"]["Row"];
+      };
+      get_pending_member_invitations: {
+        Args: Record<string, never>;
+        Returns: Database["public"]["Tables"]["group_invitations"]["Row"][];
+      };
+      get_group_member_invitations: {
+        Args: { p_group_id: string };
+        Returns: Database["public"]["Tables"]["group_invitations"]["Row"][];
+      };
+      search_invite_candidates: {
+        Args: { p_group_id: string; p_query: string };
+        Returns: {
+          id: string;
+          display_name: string;
+          email: string;
+          avatar_url: string | null;
+          is_registered: boolean;
+          state: string;
+        }[];
+      };
+      get_unread_notification_count: {
+        Args: Record<string, never>;
+        Returns: number;
+      };
+      get_invitation_notifications: {
+        Args: Record<string, never>;
+        Returns: Database["public"]["Tables"]["notifications"]["Row"][];
+      };
+      is_email_registered: {
+        Args: { p_email: string };
+        Returns: boolean;
+      };
+      get_received_member_invitations: {
+        Args: Record<string, never>;
+        Returns: Database["public"]["Tables"]["group_invitations"]["Row"][];
+      };
+      get_group_activities: {
+        Args: { p_group_id: string; p_limit?: number };
+        Returns: Database["public"]["Tables"]["group_activities"]["Row"][];
+      };
       create_group: {
         Args: {
           p_name: string;
@@ -528,6 +772,12 @@ export interface Database {
       group_type: GroupType;
       group_member_role: GroupMemberRole;
       expense_split_type: ExpenseSplitType;
+      invitation_kind: InvitationKind;
+      invitation_status: InvitationStatus;
+      invitation_delivery_channel: InvitationDeliveryChannel;
+      invitation_accepted_via: InvitationAcceptedVia;
+      notification_type: NotificationType;
+      group_activity_type: GroupActivityType;
     };
     CompositeTypes: Record<string, never>;
   };
@@ -540,6 +790,7 @@ export type ProfileUpdate = Database["public"]["Tables"]["profiles"]["Update"];
 export type GroupRow = Database["public"]["Tables"]["groups"]["Row"];
 export type GroupMemberRow = Database["public"]["Tables"]["group_members"]["Row"];
 export type GroupInvitationRow = Database["public"]["Tables"]["group_invitations"]["Row"];
+export type NotificationRow = Database["public"]["Tables"]["notifications"]["Row"];
 export type GroupGuestRow = Database["public"]["Tables"]["group_guests"]["Row"];
 export type ExpenseRow = Database["public"]["Tables"]["expenses"]["Row"];
 export type ExpenseParticipantRow =

@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 import { Mail, Lock, Eye, EyeOff, Loader2, ArrowRight } from "lucide-react";
 import { ROUTES } from "@/constants/routes";
+import { useClientSearchParams } from "@/lib/use-client-search-params";
 import { loginSchema, type LoginInput } from "../validation/auth.schema";
 import { useAuth } from "../hooks/use-auth";
 import {
@@ -19,18 +19,27 @@ import {
 
 export function LoginForm() {
   const { login, isLoggingIn } = useAuth();
-  const searchParams = useSearchParams();
-  const redirectTo = searchParams.get("redirect");
+  const searchParams = useClientSearchParams();
+  const redirectTo = searchParams?.get("redirect") ?? null;
   const [showPwd, setShowPwd] = useState(false);
 
   const {
     register,
     handleSubmit,
+    reset,
     formState: { errors },
   } = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: "", password: "" },
   });
+
+  useEffect(() => {
+    if (!searchParams) return;
+    reset({
+      email: searchParams.get("email")?.trim() ?? "",
+      password: "",
+    });
+  }, [searchParams, reset]);
 
   const onSubmit = (data: LoginInput) => login({ credentials: data, redirectTo });
 

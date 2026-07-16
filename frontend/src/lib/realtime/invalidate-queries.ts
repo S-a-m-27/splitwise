@@ -5,6 +5,7 @@ import { dashboardKeys } from "@/features/dashboard/constants/query-keys";
 import { expensesKeys } from "@/features/expenses/constants/query-keys";
 import { groupsKeys } from "@/features/groups/constants/query-keys";
 import { settlementsKeys } from "@/features/settlements/constants/query-keys";
+import { invitationsKeys } from "@/features/invitations/constants/query-keys";
 
 export type RealtimeTable =
   | "expenses"
@@ -12,7 +13,10 @@ export type RealtimeTable =
   | "settlements"
   | "group_members"
   | "group_guests"
-  | "groups";
+  | "groups"
+  | "group_invitations"
+  | "notifications"
+  | "group_activities";
 
 export interface RealtimeChangeContext {
   table: RealtimeTable;
@@ -97,6 +101,28 @@ export function invalidateQueriesForRealtimeChange(
     });
     void queryClient.invalidateQueries({
       queryKey: groupsKeys.invite(groupId, userId),
+    });
+    void queryClient.invalidateQueries({
+      queryKey: invitationsKeys.group(groupId, userId),
+    });
+  }
+
+  if (table === "group_invitations") {
+    void queryClient.invalidateQueries({ queryKey: invitationsKeys.pending(userId) });
+    void queryClient.invalidateQueries({ queryKey: invitationsKeys.history(userId) });
+    void queryClient.invalidateQueries({ queryKey: invitationsKeys.all });
+  }
+
+  if (table === "notifications") {
+    void queryClient.invalidateQueries({ queryKey: invitationsKeys.badge(userId) });
+    void queryClient.invalidateQueries({ queryKey: invitationsKeys.notifications(userId) });
+    void queryClient.invalidateQueries({ queryKey: invitationsKeys.history(userId) });
+  }
+
+  if (table === "group_activities" && groupId) {
+    void queryClient.invalidateQueries({ queryKey: activityKeys.feeds() });
+    void queryClient.invalidateQueries({
+      queryKey: groupsKeys.detail(groupId, userId),
     });
   }
 }

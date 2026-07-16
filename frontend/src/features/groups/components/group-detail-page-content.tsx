@@ -4,10 +4,9 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import Link from "next/link";
-import { Receipt, UserPlus } from "lucide-react";
+import { Receipt } from "lucide-react";
 import {
   expenseNewRoute,
-  groupInviteRoute,
   ROUTES,
 } from "@/constants/routes";
 import { DashboardShell } from "@/features/dashboard/components/dashboard-shell";
@@ -32,6 +31,8 @@ import { useActivityFeed } from "@/features/activity/hooks/use-activity";
 import { mapActivityToGroupActivity } from "@/features/activity/utils/map-activity";
 import { mapExpenseToGroupExpense } from "@/features/expenses/utils/map-expense";
 import { AddMemberByNameForm } from "@/features/groups/components/add-member-by-name-form";
+import { InviteMembersButton } from "@/features/invitations/components/invite-members-button";
+import { GroupPendingInvitationsSection } from "@/features/invitations/components/group-pending-invitations-section";
 import {
   useAddGuestByName,
   useDeleteGroup,
@@ -70,6 +71,8 @@ export function GroupDetailPageContent({ groupId }: GroupDetailPageContentProps)
   }, [isSessionError, router]);
 
   const isOwner = group?.currentUserRole === "owner";
+  const isAdmin = group?.currentUserRole === "admin";
+  const canManageInvites = isOwner || isAdmin;
 
   function handleDelete() {
     deleteGroup.mutate(groupId, {
@@ -140,15 +143,23 @@ export function GroupDetailPageContent({ groupId }: GroupDetailPageContentProps)
         <GroupHeader group={group} />
         <BalanceSummary balances={balanceSummary} />
 
+        {canManageInvites && (
+          <GroupPendingInvitationsSection
+            groupId={group.id}
+            groupName={group.name}
+            groupIcon={group.icon}
+            isOwnerOrAdmin={canManageInvites}
+          />
+        )}
+
         <div className="flex gap-3">
-          <Button
-            render={<Link href={groupInviteRoute(group.id)} />}
-            variant="outline"
-            className="h-11 flex-1 gap-2"
-          >
-            <UserPlus className="size-4" aria-hidden="true" />
-            Invite
-          </Button>
+          {canManageInvites && (
+            <InviteMembersButton
+              groupId={group.id}
+              groupName={group.name}
+              groupIcon={group.icon}
+            />
+          )}
           <Button
             render={<Link href={expenseNewRoute(group.id)} />}
             className="h-11 flex-1 gap-2"

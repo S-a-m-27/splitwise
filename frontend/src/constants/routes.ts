@@ -18,6 +18,7 @@ export const ROUTES = {
   profileChangePassword: "/profile/change-password",
   profileAbout: "/profile/about",
   settings: "/settings",
+  invitations: "/invitations",
 } as const;
 
 export type AppRoute = (typeof ROUTES)[keyof typeof ROUTES];
@@ -37,6 +38,7 @@ export const PROTECTED_ROUTES: AppRoute[] = [
   ROUTES.profileChangePassword,
   ROUTES.profileAbout,
   ROUTES.settings,
+  ROUTES.invitations,
 ];
 
 export const AUTH_ROUTES: AppRoute[] = [
@@ -82,6 +84,10 @@ export function profileEditRoute(): string {
 
 export function profileChangePasswordRoute(): string {
   return ROUTES.profileChangePassword;
+}
+
+export function invitationDetailRoute(invitationId: string): string {
+  return `/invitations/${invitationId}`;
 }
 
 export function profileAboutRoute(): string {

@@ -1,25 +1,38 @@
 "use client";
 
+import { useState } from "react";
 import { Bell } from "lucide-react";
-import { toast } from "sonner";
+import { InvitationBadge } from "@/features/invitations/components/invitation-badge";
+import { NotificationsPanel } from "@/features/invitations/components/notifications-panel";
+import { useInvitationBadge } from "@/features/invitations/hooks/use-invitation-ui";
 import { Button } from "@/components/ui/button";
 
-/** Notification control — future module; no badge until backend ships. */
+/** Opens an integrated notifications panel with inline invitation actions. */
 export function NotificationButton() {
+  const [open, setOpen] = useState(false);
+  const { count, hasUnread } = useInvitationBadge();
+
   return (
-    <Button
-      type="button"
-      variant="outline"
-      size="icon"
-      aria-label="Notifications"
-      onClick={() =>
-        toast.info("Notifications — coming soon", {
-          description: "Alerts will appear here in a future update.",
-        })
-      }
-      className="relative size-10 shrink-0 rounded-xl min-[375px]:size-11"
-    >
-      <Bell className="size-[1.125rem] min-[375px]:size-5" aria-hidden="true" />
-    </Button>
+    <div className="relative">
+      <Button
+        type="button"
+        variant="outline"
+        size="icon"
+        aria-label={
+          hasUnread
+            ? `Notifications, ${count} unread invitation${count === 1 ? "" : "s"}`
+            : "Notifications"
+        }
+        aria-expanded={open}
+        aria-haspopup="dialog"
+        onClick={() => setOpen((value) => !value)}
+        className="relative size-10 shrink-0 rounded-xl min-[375px]:size-11"
+      >
+        <Bell className="size-[1.125rem] min-[375px]:size-5" aria-hidden="true" />
+        <InvitationBadge count={count} />
+      </Button>
+
+      <NotificationsPanel open={open} onOpenChange={setOpen} />
+    </div>
   );
 }

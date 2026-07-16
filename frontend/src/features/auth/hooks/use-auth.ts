@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { ROUTES } from "@/constants/routes";
+import { resolvePostLoginRedirect } from "@/lib/post-login-redirect";
 import { getSafeRedirect } from "@/lib/safe-redirect";
 import { createClient as createBrowserClient } from "@/lib/supabase/client";
 import { hasSupabaseEnv } from "@/lib/env";
@@ -99,7 +100,8 @@ export function useAuth() {
       await syncAuthState();
       toast.success("Welcome back!");
       queryClient.clear();
-      router.push(getSafeRedirect(variables.redirectTo) ?? ROUTES.dashboard);
+      const target = await resolvePostLoginRedirect(variables.redirectTo);
+      router.replace(target);
     },
     onError: (error: unknown) => {
       toast.error(getMutationErrorMessage(error));
@@ -107,15 +109,32 @@ export function useAuth() {
   });
 
   const registerMutation = useMutation({
-    mutationFn: (fields: RegisterInput) => authService.signUp(fields),
-    onSuccess: (result) => {
+    mutationFn: ({
+      fields,
+    }: {
+      fields: RegisterInput;
+      redirectTo?: string | null;
+    }) => authService.signUp(fields),
+    onSuccess: (result, variables) => {
       if (result.error) {
         toast.error(authService.getErrorMessage(result.error));
         return;
       }
 
       toast.success("Account created! Please check your email to confirm registration.");
-      router.push(ROUTES.login);
+
+      const params = new URLSearchParams();
+      if (variables.fields.email) {
+        params.set("email", variables.fields.email);
+      }
+
+      const safeRedirect = getSafeRedirect(variables.redirectTo);
+      if (safeRedirect) {
+        params.set("redirect", safeRedirect);
+      }
+
+      const query = params.toString();
+      router.push(query ? `${ROUTES.login}?${query}` : ROUTES.login);
     },
     onError: (error: unknown) => {
       toast.error(getMutationErrorMessage(error));

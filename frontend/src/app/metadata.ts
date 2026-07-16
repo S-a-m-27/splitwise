@@ -16,11 +16,13 @@ export const baseMetadata: Metadata = {
   formatDetection: {
     telephone: false,
   },
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "default",
-    title: APP_CONFIG.name,
-  },
+  appleWebApp: APP_CONFIG.enablePwa
+    ? {
+        capable: true,
+        statusBarStyle: "default",
+        title: APP_CONFIG.name,
+      }
+    : undefined,
   openGraph: {
     type: "website",
     locale: "en_US",
@@ -38,7 +40,7 @@ export const baseMetadata: Metadata = {
     index: true,
     follow: true,
   },
-  manifest: "/manifest.json",
+  manifest: APP_CONFIG.enablePwa ? "/manifest.json" : undefined,
   icons: {
     icon: [
       { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },

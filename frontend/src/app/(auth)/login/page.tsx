@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
 import { AuthLayout, LoginForm } from "@/features/auth";
 import { APP_CONFIG } from "@/constants/config";
-import { AuthGateLoader } from "@/features/auth/components/auth-gate-loader";
 
 export const metadata: Metadata = {
     title: `Sign In — ${APP_CONFIG.name}`,
@@ -15,9 +13,7 @@ export default function LoginPage() {
             title="Welcome Back"
             subtitle="Sign in to your account to manage your split bills"
         >
-            <Suspense fallback={<AuthGateLoader message="Loading sign in…" />}>
-                <LoginForm />
-            </Suspense>
+            <LoginForm />
         </AuthLayout>
     );
 }
