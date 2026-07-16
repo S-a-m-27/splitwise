@@ -70,7 +70,7 @@ export function MessageList({
     <div
       ref={containerRef}
       className={cn(
-        "relative flex flex-1 flex-col overflow-y-auto overscroll-contain",
+        "relative flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain",
         "bg-[radial-gradient(circle_at_top,color-mix(in_oklch,var(--primary)_6%,transparent),transparent_32%)]",
         className,
       )}

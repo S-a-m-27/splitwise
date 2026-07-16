@@ -76,10 +76,10 @@ export function ChatScreen({
   return (
     <div
       className={cn(
-        "flex min-h-0 flex-1 flex-col overflow-hidden bg-background",
+        "flex min-h-0 flex-col overflow-hidden bg-background",
         embedded
-          ? "min-h-[32rem] rounded-xl border border-border/80 shadow-sm min-[375px]:rounded-2xl"
-          : "h-[100dvh] max-h-[100dvh] md:border-x md:border-border/60 md:shadow-2xl",
+          ? "h-[min(70dvh,44rem)] min-h-[28rem] rounded-xl border border-border/80 shadow-sm min-[375px]:rounded-2xl"
+          : "h-[100dvh] max-h-[100dvh] flex-1 md:border-x md:border-border/60 md:shadow-2xl",
         className,
       )}
     >
