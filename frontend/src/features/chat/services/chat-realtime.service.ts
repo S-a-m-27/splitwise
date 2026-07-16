@@ -31,6 +31,8 @@ interface ManagedActivityChannel extends ManagedChannel {
   onlineUserIds: Set<string>;
   typingUserIds: Set<string>;
   typingTimers: Map<string, ReturnType<typeof setTimeout>>;
+  cleanupTimer?: ReturnType<typeof setTimeout>;
+  removing?: Promise<void>;
 }
 
 function newRow(payload: RealtimePostgresChangesPayload<Row>): Row {
@@ -179,6 +181,15 @@ export class ChatRealtimeService implements ChatRealtimeGateway {
   ): ChatSubscription {
     const existing = this.activityChannels.get(conversationId);
     if (existing) {
+      if (existing.removing) {
+        return this.subscribeAfterRemoval(existing.removing, () =>
+          this.subscribeToConversationActivity(conversationId, userId, listener),
+        );
+      }
+      if (existing.cleanupTimer) {
+        clearTimeout(existing.cleanupTimer);
+        existing.cleanupTimer = undefined;
+      }
       const subscription = this.attach(existing, listener, () =>
         this.removeActivityListener(conversationId, listener),
       );
@@ -370,7 +381,11 @@ export class ChatRealtimeService implements ChatRealtimeGateway {
       typingTimers,
       remove: async () => {
         for (const timer of typingTimers.values()) clearTimeout(timer);
-        await channel.untrack();
+        try {
+          await channel.untrack();
+        } catch {
+          // Removing the channel still guarantees local cleanup.
+        }
         return supabase.removeChannel(channel);
       },
     });
@@ -506,9 +521,47 @@ export class ChatRealtimeService implements ChatRealtimeGateway {
     listener: ChatEventListener,
   ): Promise<void> {
     const managed = this.activityChannels.get(conversationId);
-    if (!managed || !this.release(managed, listener)) return;
-    this.activityChannels.delete(conversationId);
-    await managed.remove();
+    if (!managed) return;
+    managed.listeners.delete(listener);
+    if (managed.listeners.size > 0 || managed.cleanupTimer || managed.removing) return;
+
+    managed.cleanupTimer = setTimeout(() => {
+      managed.cleanupTimer = undefined;
+      if (managed.listeners.size > 0 || managed.removing) return;
+
+      managed.removing = (async () => {
+        try {
+          await managed.remove();
+        } catch {
+          // Channel cleanup is best-effort; the map must still be released.
+        } finally {
+          if (this.activityChannels.get(conversationId) === managed) {
+            this.activityChannels.delete(conversationId);
+          }
+        }
+      })();
+    }, 0);
+  }
+
+  private subscribeAfterRemoval(
+    removal: Promise<void>,
+    subscribe: () => ChatSubscription,
+  ): ChatSubscription {
+    let cancelled = false;
+    let next: ChatSubscription | null = null;
+    const ready = removal.then(async () => {
+      if (cancelled) return;
+      next = subscribe();
+      await next.ready;
+    });
+
+    return {
+      ready,
+      unsubscribe: async () => {
+        cancelled = true;
+        if (next) await next.unsubscribe();
+      },
+    };
   }
 
   private async removeInboxListener(
