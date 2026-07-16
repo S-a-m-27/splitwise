@@ -3,6 +3,7 @@ import type { ConversationType } from "@/features/chat/types";
 export interface ChatParticipant {
   id: string;
   name: string;
+  email?: string;
   initials: string;
   avatarUrl?: string;
   isOnline?: boolean;
@@ -35,6 +36,7 @@ export interface ChatMessage {
   conversationId: string;
   senderId: string;
   senderName: string;
+  senderEmail?: string;
   senderInitials: string;
   senderAvatarUrl?: string;
   content: string;

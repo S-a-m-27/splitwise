@@ -91,7 +91,7 @@ export function ChatScreen({
       />
 
       {messages.length === 0 ? (
-        <EmptyChatState />
+        <EmptyChatState typingLabel={typingLabel} />
       ) : (
         <MessageList
           messages={messages}

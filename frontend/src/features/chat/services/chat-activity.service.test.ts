@@ -55,4 +55,19 @@ describe("ChatActivityService", () => {
       false,
     );
   });
+
+  it("retries immediately after a failed typing broadcast", async () => {
+    const broadcastTyping = vi
+      .fn<ChatRealtimeGateway["broadcastTyping"]>()
+      .mockRejectedValueOnce(new Error("channel unavailable"))
+      .mockResolvedValue(undefined);
+    const service = new ChatActivityService(gateway(broadcastTyping));
+
+    service.notifyTyping("conversation", "user");
+    await Promise.resolve();
+    await Promise.resolve();
+    service.notifyTyping("conversation", "user");
+
+    expect(broadcastTyping).toHaveBeenCalledTimes(2);
+  });
 });

@@ -42,6 +42,7 @@ export interface ConversationMember {
   leftAt: string | null;
   displayName?: string;
   avatarUrl?: string | null;
+  email?: string;
 }
 
 export interface MessageListItem {

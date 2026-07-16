@@ -49,6 +49,9 @@ interface ConversationMemberRow {
   archived_at: string | null;
   left_at: string | null;
   profile?: { full_name: string; avatar_url: string | null } | null;
+  full_name?: string;
+  avatar_url?: string | null;
+  email?: string | null;
 }
 
 interface MessageListRow {
@@ -110,8 +113,9 @@ export function mapConversationMember(row: ConversationMemberRow): ConversationM
     mutedAt: row.muted_at,
     archivedAt: row.archived_at,
     leftAt: row.left_at,
-    displayName: row.profile?.full_name,
-    avatarUrl: row.profile?.avatar_url,
+    displayName: row.full_name ?? row.profile?.full_name,
+    avatarUrl: row.avatar_url ?? row.profile?.avatar_url,
+    email: row.email ?? undefined,
   };
 }
 

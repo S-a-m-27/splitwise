@@ -41,20 +41,6 @@ const CONVERSATION_DETAIL_SELECT = `
   updated_at
 `;
 
-const CONVERSATION_MEMBERS_SELECT = `
-  id,
-  conversation_id,
-  user_id,
-  role,
-  joined_at,
-  last_read_message_id,
-  unread_count,
-  muted_at,
-  archived_at,
-  left_at,
-  profile:profiles!conversation_members_user_id_fkey(full_name, avatar_url)
-`;
-
 function throwIfSupabaseError(error: { message: string; code?: string } | null): void {
   if (!error) return;
   const normalized = normalizeChatError(error);
@@ -244,16 +230,13 @@ export class ConversationService {
     await requireChatUserId();
 
     const supabase = createBrowserClient();
-    const { data, error } = await supabase
-      .from("conversation_members")
-      .select(CONVERSATION_MEMBERS_SELECT)
-      .eq("conversation_id", conversationId)
-      .is("left_at", null)
-      .order("joined_at", { ascending: true });
+    const { data, error } = await supabase.rpc("get_conversation_member_details", {
+      p_conversation_id: conversationId,
+    });
 
     throwIfSupabaseError(error);
 
-    return (data ?? []).map((row) => mapConversationMember(row as never));
+    return (data ?? []).map((row) => mapConversationMember(row));
   }
 
   async findDirectConversationWithUser(

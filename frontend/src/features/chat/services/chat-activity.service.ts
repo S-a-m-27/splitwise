@@ -28,7 +28,13 @@ export class ChatActivityService {
       state.lastSentAt = now;
       void this.realtime
         .broadcastTyping(conversationId, userId, true)
-        .catch(() => undefined);
+        .catch(() => {
+          const current = this.typing.get(conversationId);
+          if (current === state) {
+            state.active = false;
+            state.lastSentAt = 0;
+          }
+        });
     }
 
     state.idleTimer = setTimeout(() => {

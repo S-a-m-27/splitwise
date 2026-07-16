@@ -109,9 +109,14 @@ export function OtherMessageBubble({
 
       <div className="max-w-[78%] min-[375px]:max-w-[74%] md:max-w-[66%]">
         {showSenderInGroup && message.showSenderName && (
-          <p className="mb-1.5 pl-1 text-xs font-semibold text-primary">
-            {message.senderName}
-          </p>
+          <div className="mb-1.5 pl-1">
+            <p className="text-xs font-semibold text-primary">{message.senderName}</p>
+            {message.senderEmail && (
+              <p className="mt-0.5 text-[11px] text-muted-foreground">
+                {message.senderEmail}
+              </p>
+            )}
+          </div>
         )}
         <div
           className={cn(

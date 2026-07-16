@@ -983,7 +983,7 @@ export interface Database {
         Returns: {
           id: string;
           display_name: string;
-          email: string;
+          email: string | null;
           avatar_url: string | null;
           is_registered: boolean;
           state: string;
@@ -1105,6 +1105,28 @@ export interface Database {
       is_conversation_admin: {
         Args: { p_conversation_id: string; p_user_id?: string };
         Returns: boolean;
+      };
+      can_view_chat_profile: {
+        Args: { p_profile_user_id: string };
+        Returns: boolean;
+      };
+      get_conversation_member_details: {
+        Args: { p_conversation_id: string };
+        Returns: {
+          id: string;
+          conversation_id: string;
+          user_id: string;
+          role: ConversationMemberRole;
+          joined_at: string;
+          last_read_message_id: string | null;
+          unread_count: number;
+          muted_at: string | null;
+          archived_at: string | null;
+          left_at: string | null;
+          full_name: string;
+          avatar_url: string | null;
+          email: string;
+        }[];
       };
       get_or_create_direct_conversation: {
         Args: { p_other_user_id: string };

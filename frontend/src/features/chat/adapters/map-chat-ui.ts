@@ -20,11 +20,19 @@ function initials(name: string): string {
     .toUpperCase();
 }
 
-export function mapMemberToParticipant(member: ConversationMember): ChatParticipant {
+function normalizedName(name: string | undefined): string {
+  return name?.trim().toLocaleLowerCase() ?? "";
+}
+
+export function mapMemberToParticipant(
+  member: ConversationMember,
+  showEmail = false,
+): ChatParticipant {
   const name = member.displayName ?? "Member";
   return {
     id: member.userId,
     name,
+    email: showEmail ? member.email : undefined,
     initials: initials(name),
     avatarUrl: member.avatarUrl ?? undefined,
   };
@@ -36,10 +44,19 @@ export function mapConversationToUi(
   currentUserId?: string,
   onlineUserIds: string[] = [],
 ): ChatConversationPreview {
-  let participants = members
-    .filter((member) => member.userId !== currentUserId && !member.leftAt)
+  const activeMembers = members.filter((member) => !member.leftAt);
+  const nameCounts = new Map<string, number>();
+  for (const member of activeMembers) {
+    const key = normalizedName(member.displayName);
+    if (key) nameCounts.set(key, (nameCounts.get(key) ?? 0) + 1);
+  }
+  let participants = activeMembers
+    .filter((member) => member.userId !== currentUserId)
     .map((member) => ({
-      ...mapMemberToParticipant(member),
+      ...mapMemberToParticipant(
+        member,
+        (nameCounts.get(normalizedName(member.displayName)) ?? 0) > 1,
+      ),
       isOnline: onlineUserIds.includes(member.userId),
     }));
   if (
@@ -85,11 +102,20 @@ export function mapMessageToUi(
   const sender = members.find((member) => member.userId === message.senderId);
   const senderName =
     message.senderName ?? sender?.displayName ?? (message.senderId === currentUserId ? "You" : "Member");
+  const duplicateNameCount = members.filter(
+    (member) =>
+      !member.leftAt &&
+      normalizedName(member.displayName) === normalizedName(sender?.displayName),
+  ).length;
   return {
     id: message.id,
     conversationId: message.conversationId,
     senderId: message.senderId,
     senderName,
+    senderEmail:
+      message.senderId !== currentUserId && duplicateNameCount > 1
+        ? sender?.email
+        : undefined,
     senderInitials: initials(senderName),
     senderAvatarUrl: message.senderAvatarUrl ?? sender?.avatarUrl ?? undefined,
     content: message.content ?? "",
