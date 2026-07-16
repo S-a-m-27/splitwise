@@ -4,6 +4,10 @@ import type { RealtimeChangeContext, RealtimeTable } from "@/lib/realtime/invali
 type RowWithGroup = { group_id?: string };
 type ExpenseRow = { id?: string; group_id?: string };
 type ParticipantRow = { expense_id?: string };
+type SettlementRow = {
+  group_id?: string;
+  client_settlement_id?: string | null;
+};
 
 function readGroupId(
   payload: RealtimePostgresChangesPayload<Record<string, unknown>>,
@@ -44,7 +48,14 @@ export function toRealtimeChangeContext(
       const { expenseId } = readParticipantContext(payload);
       return { table, expenseId };
     }
-    case "settlements":
+    case "settlements": {
+      const row = (payload.new ?? payload.old) as SettlementRow | undefined;
+      return {
+        table,
+        groupId: row?.group_id,
+        clientEventId: row?.client_settlement_id ?? undefined,
+      };
+    }
     case "group_members":
     case "group_guests":
     case "groups":

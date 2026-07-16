@@ -9,6 +9,7 @@ export const ROUTES = {
   dashboard: "/dashboard",
   groups: "/groups",
   groupNew: "/groups/new",
+  chat: "/chat",
   activity: "/activity",
   expenses: "/expenses",
   expenseNew: "/expenses/new",
@@ -30,6 +31,7 @@ export type AppRoute = (typeof ROUTES)[keyof typeof ROUTES];
 export const PROTECTED_ROUTES: AppRoute[] = [
   ROUTES.dashboard,
   ROUTES.groups,
+  ROUTES.chat,
   ROUTES.activity,
   ROUTES.expenses,
   ROUTES.settlements,
@@ -49,6 +51,10 @@ export const AUTH_ROUTES: AppRoute[] = [
 ];
 
 /** Build a group detail route — UI-only until dynamic routes ship in backend milestone. */
+export function chatThreadRoute(conversationId: string): string {
+  return `/chat/${conversationId}`;
+}
+
 export function groupDetailRoute(groupId: string): string {
   return `/groups/${groupId}`;
 }

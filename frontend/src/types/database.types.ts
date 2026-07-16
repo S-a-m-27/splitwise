@@ -30,7 +30,8 @@ export type NotificationType =
   | "invitation_received"
   | "invitation_linked"
   | "invitation_accepted"
-  | "invitation_declined";
+  | "invitation_declined"
+  | "chat_message";
 
 export type GroupActivityType =
   | "invitation_sent"
@@ -39,6 +40,25 @@ export type GroupActivityType =
   | "invitation_cancelled"
   | "invitation_expired"
   | "member_joined";
+
+export type ConversationType = "group" | "direct" | "announcement" | "community";
+export type ConversationMemberRole = "owner" | "admin" | "member" | "moderator";
+export type MessageType =
+  | "text"
+  | "image"
+  | "video"
+  | "file"
+  | "voice"
+  | "location"
+  | "system";
+export type ChatAuditEventType =
+  | "conversation_created"
+  | "conversation_archived"
+  | "member_joined"
+  | "member_left"
+  | "message_created"
+  | "message_updated"
+  | "message_deleted";
 
 export interface Database {
   public: {
@@ -289,6 +309,8 @@ export interface Database {
           type: NotificationType;
           invitation_id: string | null;
           group_id: string | null;
+          conversation_id: string | null;
+          message_id: string | null;
           title: string;
           body: string;
           read_at: string | null;
@@ -300,6 +322,8 @@ export interface Database {
           type: NotificationType;
           invitation_id?: string | null;
           group_id?: string | null;
+          conversation_id?: string | null;
+          message_id?: string | null;
           title: string;
           body: string;
           read_at?: string | null;
@@ -311,6 +335,8 @@ export interface Database {
           type?: NotificationType;
           invitation_id?: string | null;
           group_id?: string | null;
+          conversation_id?: string | null;
+          message_id?: string | null;
           title?: string;
           body?: string;
           read_at?: string | null;
@@ -336,6 +362,20 @@ export interface Database {
             columns: ["group_id"];
             isOneToOne: false;
             referencedRelation: "groups";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "notifications_conversation_id_fkey";
+            columns: ["conversation_id"];
+            isOneToOne: false;
+            referencedRelation: "conversations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "notifications_message_id_fkey";
+            columns: ["message_id"];
+            isOneToOne: false;
+            referencedRelation: "messages";
             referencedColumns: ["id"];
           },
         ];
@@ -503,6 +543,7 @@ export interface Database {
       };
       settlements: {
         Row: {
+          client_settlement_id: string | null;
           id: string;
           group_id: string;
           from_user_id: string | null;
@@ -515,6 +556,7 @@ export interface Database {
           created_at: string;
         };
         Insert: {
+          client_settlement_id?: string | null;
           id?: string;
           group_id: string;
           from_user_id?: string | null;
@@ -527,6 +569,7 @@ export interface Database {
           created_at?: string;
         };
         Update: {
+          client_settlement_id?: string | null;
           id?: string;
           group_id?: string;
           from_user_id?: string | null;
@@ -577,6 +620,282 @@ export interface Database {
           {
             foreignKeyName: "settlements_created_by_fkey";
             columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      conversations: {
+        Row: {
+          id: string;
+          type: ConversationType;
+          group_id: string | null;
+          created_by: string;
+          dm_pair_key: string | null;
+          last_message_at: string | null;
+          last_message_preview: string | null;
+          metadata: Json;
+          created_at: string;
+          updated_at: string;
+          deleted_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          type: ConversationType;
+          group_id?: string | null;
+          created_by: string;
+          dm_pair_key?: string | null;
+          last_message_at?: string | null;
+          last_message_preview?: string | null;
+          metadata?: Json;
+          created_at?: string;
+          updated_at?: string;
+          deleted_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          type?: ConversationType;
+          group_id?: string | null;
+          created_by?: string;
+          dm_pair_key?: string | null;
+          last_message_at?: string | null;
+          last_message_preview?: string | null;
+          metadata?: Json;
+          created_at?: string;
+          updated_at?: string;
+          deleted_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "conversations_group_id_fkey";
+            columns: ["group_id"];
+            isOneToOne: false;
+            referencedRelation: "groups";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "conversations_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      conversation_members: {
+        Row: {
+          id: string;
+          conversation_id: string;
+          user_id: string;
+          role: ConversationMemberRole;
+          joined_at: string;
+          last_read_message_id: string | null;
+          unread_count: number;
+          muted_at: string | null;
+          archived_at: string | null;
+          left_at: string | null;
+          metadata: Json;
+        };
+        Insert: {
+          id?: string;
+          conversation_id: string;
+          user_id: string;
+          role?: ConversationMemberRole;
+          joined_at?: string;
+          last_read_message_id?: string | null;
+          unread_count?: number;
+          muted_at?: string | null;
+          archived_at?: string | null;
+          left_at?: string | null;
+          metadata?: Json;
+        };
+        Update: {
+          id?: string;
+          conversation_id?: string;
+          user_id?: string;
+          role?: ConversationMemberRole;
+          joined_at?: string;
+          last_read_message_id?: string | null;
+          unread_count?: number;
+          muted_at?: string | null;
+          archived_at?: string | null;
+          left_at?: string | null;
+          metadata?: Json;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "conversation_members_conversation_id_fkey";
+            columns: ["conversation_id"];
+            isOneToOne: false;
+            referencedRelation: "conversations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "conversation_members_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "conversation_members_last_read_message_id_fkey";
+            columns: ["last_read_message_id"];
+            isOneToOne: false;
+            referencedRelation: "messages";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      messages: {
+        Row: {
+          id: string;
+          conversation_id: string;
+          sender_id: string;
+          message_type: MessageType;
+          content: string | null;
+          reply_to_message_id: string | null;
+          client_message_id: string | null;
+          metadata: Json;
+          created_at: string;
+          updated_at: string;
+          edited_at: string | null;
+          deleted_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          conversation_id: string;
+          sender_id: string;
+          message_type?: MessageType;
+          content?: string | null;
+          reply_to_message_id?: string | null;
+          client_message_id?: string | null;
+          metadata?: Json;
+          created_at?: string;
+          updated_at?: string;
+          edited_at?: string | null;
+          deleted_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          conversation_id?: string;
+          sender_id?: string;
+          message_type?: MessageType;
+          content?: string | null;
+          reply_to_message_id?: string | null;
+          client_message_id?: string | null;
+          metadata?: Json;
+          created_at?: string;
+          updated_at?: string;
+          edited_at?: string | null;
+          deleted_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "messages_conversation_id_fkey";
+            columns: ["conversation_id"];
+            isOneToOne: false;
+            referencedRelation: "conversations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "messages_sender_id_fkey";
+            columns: ["sender_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "messages_reply_to_message_id_fkey";
+            columns: ["reply_to_message_id"];
+            isOneToOne: false;
+            referencedRelation: "messages";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      message_reads: {
+        Row: {
+          id: string;
+          conversation_id: string;
+          user_id: string;
+          message_id: string;
+          read_at: string;
+        };
+        Insert: {
+          id?: string;
+          conversation_id: string;
+          user_id: string;
+          message_id: string;
+          read_at?: string;
+        };
+        Update: {
+          id?: string;
+          conversation_id?: string;
+          user_id?: string;
+          message_id?: string;
+          read_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "message_reads_conversation_id_fkey";
+            columns: ["conversation_id"];
+            isOneToOne: false;
+            referencedRelation: "conversations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "message_reads_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "message_reads_message_id_fkey";
+            columns: ["message_id"];
+            isOneToOne: false;
+            referencedRelation: "messages";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      chat_audit_events: {
+        Row: {
+          id: string;
+          conversation_id: string | null;
+          actor_user_id: string | null;
+          event_type: ChatAuditEventType;
+          metadata: Json;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          conversation_id?: string | null;
+          actor_user_id?: string | null;
+          event_type: ChatAuditEventType;
+          metadata?: Json;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          conversation_id?: string | null;
+          actor_user_id?: string | null;
+          event_type?: ChatAuditEventType;
+          metadata?: Json;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "chat_audit_events_conversation_id_fkey";
+            columns: ["conversation_id"];
+            isOneToOne: false;
+            referencedRelation: "conversations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "chat_audit_events_actor_user_id_fkey";
+            columns: ["actor_user_id"];
             isOneToOne: false;
             referencedRelation: "profiles";
             referencedColumns: ["id"];
@@ -756,8 +1075,16 @@ export interface Database {
           p_to_participant_id: string;
           p_amount: number;
           p_notes?: string | null;
+          p_client_settlement_id?: string | null;
         };
         Returns: Database["public"]["Tables"]["settlements"]["Row"];
+      };
+      calculate_group_net_balances: {
+        Args: { p_group_id: string };
+        Returns: {
+          participant_id: string;
+          net_cents: number;
+        }[];
       };
       get_profile_stats: {
         Args: Record<string, never>;
@@ -766,6 +1093,57 @@ export interface Database {
           total_expenses: number;
           total_paid: number;
         }[];
+      };
+      build_dm_pair_key: {
+        Args: { p_user_a: string; p_user_b: string };
+        Returns: string;
+      };
+      is_conversation_member: {
+        Args: { p_conversation_id: string; p_user_id?: string };
+        Returns: boolean;
+      };
+      is_conversation_admin: {
+        Args: { p_conversation_id: string; p_user_id?: string };
+        Returns: boolean;
+      };
+      get_or_create_direct_conversation: {
+        Args: { p_other_user_id: string };
+        Returns: string;
+      };
+      get_group_conversation: {
+        Args: { p_group_id: string };
+        Returns: string;
+      };
+      list_user_conversations: {
+        Args: { p_limit?: number; p_offset?: number };
+        Returns: {
+          id: string;
+          type: ConversationType;
+          group_id: string | null;
+          created_by: string;
+          last_message_at: string | null;
+          last_message_preview: string | null;
+          metadata: Json;
+          created_at: string;
+          updated_at: string;
+          unread_count: number;
+          muted_at: string | null;
+          archived_at: string | null;
+        }[];
+      };
+      send_chat_message: {
+        Args: {
+          p_conversation_id: string;
+          p_content: string;
+          p_client_message_id: string;
+          p_message_type?: MessageType;
+          p_reply_to_message_id?: string | null;
+        };
+        Returns: Database["public"]["Tables"]["messages"]["Row"];
+      };
+      mark_conversation_read: {
+        Args: { p_conversation_id: string; p_message_id: string };
+        Returns: undefined;
       };
     };
     Enums: {
@@ -778,6 +1156,10 @@ export interface Database {
       invitation_accepted_via: InvitationAcceptedVia;
       notification_type: NotificationType;
       group_activity_type: GroupActivityType;
+      conversation_type: ConversationType;
+      conversation_member_role: ConversationMemberRole;
+      message_type: MessageType;
+      chat_audit_event_type: ChatAuditEventType;
     };
     CompositeTypes: Record<string, never>;
   };
@@ -796,3 +1178,9 @@ export type ExpenseRow = Database["public"]["Tables"]["expenses"]["Row"];
 export type ExpenseParticipantRow =
   Database["public"]["Tables"]["expense_participants"]["Row"];
 export type SettlementRow = Database["public"]["Tables"]["settlements"]["Row"];
+export type ConversationRow = Database["public"]["Tables"]["conversations"]["Row"];
+export type ConversationMemberRow =
+  Database["public"]["Tables"]["conversation_members"]["Row"];
+export type MessageRow = Database["public"]["Tables"]["messages"]["Row"];
+export type MessageReadRow = Database["public"]["Tables"]["message_reads"]["Row"];
+export type ChatAuditEventRow = Database["public"]["Tables"]["chat_audit_events"]["Row"];

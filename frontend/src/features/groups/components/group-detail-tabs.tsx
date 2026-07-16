@@ -3,12 +3,13 @@
 import { META_TEXT_SUBTLE_CLASS } from "@/lib/typography";
 import { cn } from "@/lib/utils";
 
-export type GroupDetailTab = "expenses" | "members" | "activity";
+export type GroupDetailTab = "expenses" | "balances" | "members" | "activity" | "chat";
 
 interface GroupDetailTabsProps {
   activeTab: GroupDetailTab;
   onTabChange: (tab: GroupDetailTab) => void;
   expenseCount: number;
+  balanceCount: number;
   memberCount: number;
   activityCount: number;
   className?: string;
@@ -16,34 +17,59 @@ interface GroupDetailTabsProps {
 
 const TABS: { id: GroupDetailTab; label: string }[] = [
   { id: "expenses", label: "Expenses" },
+  { id: "balances", label: "Balances" },
   { id: "members", label: "Members" },
   { id: "activity", label: "Activity" },
+  { id: "chat", label: "Chat" },
 ];
 
 export function GroupDetailTabs({
   activeTab,
   onTabChange,
   expenseCount,
+  balanceCount,
   memberCount,
   activityCount,
   className,
 }: GroupDetailTabsProps) {
   const counts: Record<GroupDetailTab, number> = {
     expenses: expenseCount,
+    balances: balanceCount,
     members: memberCount,
     activity: activityCount,
+    chat: 0,
   };
+
+  function handleKeyDown(
+    event: React.KeyboardEvent<HTMLButtonElement>,
+    currentIndex: number,
+  ) {
+    let nextIndex: number | null = null;
+    if (event.key === "ArrowRight") nextIndex = (currentIndex + 1) % TABS.length;
+    if (event.key === "ArrowLeft") {
+      nextIndex = (currentIndex - 1 + TABS.length) % TABS.length;
+    }
+    if (event.key === "Home") nextIndex = 0;
+    if (event.key === "End") nextIndex = TABS.length - 1;
+    if (nextIndex === null) return;
+
+    event.preventDefault();
+    const nextTab = TABS[nextIndex];
+    if (!nextTab) return;
+    onTabChange(nextTab.id);
+    document.getElementById(`group-tab-${nextTab.id}`)?.focus();
+  }
 
   return (
     <div
       role="tablist"
       aria-label="Group sections"
       className={cn(
-        "flex gap-1 rounded-xl border border-border/80 bg-muted/40 p-1",
+        "flex gap-1 overflow-x-auto rounded-xl border border-border/80 bg-muted/40 p-1",
         className,
       )}
     >
-      {TABS.map((tab) => {
+      {TABS.map((tab, index) => {
         const isActive = activeTab === tab.id;
 
         return (
@@ -54,9 +80,11 @@ export function GroupDetailTabs({
             aria-selected={isActive}
             aria-controls={`group-panel-${tab.id}`}
             id={`group-tab-${tab.id}`}
+            tabIndex={isActive ? 0 : -1}
             onClick={() => onTabChange(tab.id)}
+            onKeyDown={(event) => handleKeyDown(event, index)}
             className={cn(
-              "min-h-11 flex-1 rounded-lg px-2 py-2 text-xs font-semibold transition-all duration-150",
+              "min-h-11 shrink-0 flex-1 rounded-lg px-2 py-2 text-xs font-semibold transition-all duration-150",
               "min-[375px]:text-sm",
               "focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
               isActive
@@ -65,9 +93,11 @@ export function GroupDetailTabs({
             )}
           >
             {tab.label}
-            <span className={cn("ml-1", META_TEXT_SUBTLE_CLASS)}>
-              ({counts[tab.id]})
-            </span>
+            {(tab.id !== "chat" || counts[tab.id] > 0) && (
+              <span className={cn("ml-1", META_TEXT_SUBTLE_CLASS)}>
+                ({counts[tab.id]})
+              </span>
+            )}
           </button>
         );
       })}

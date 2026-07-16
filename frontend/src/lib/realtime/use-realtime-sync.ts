@@ -14,6 +14,9 @@ import {
   type RealtimeTable,
 } from "@/lib/realtime/invalidate-queries";
 import { toRealtimeChangeContext } from "@/lib/realtime/parse-payload";
+import { consumeRealtimeEcho } from "@/lib/realtime/realtime-echo-registry";
+import { evaluateRealtimeRecovery } from "@/lib/realtime/realtime-recovery";
+import { recoverSettlementQueries } from "@/features/settlements/cache/sync-settlement-queries";
 
 const REALTIME_TABLES: RealtimeTable[] = [
   "expenses",
@@ -35,24 +38,34 @@ const DEBOUNCE_MS = 350;
  */
 export function useRealtimeSync() {
   const queryClient = useQueryClient();
-  const { user, isLoading } = useAuth();
+  const { user, session, isLoading } = useAuth();
   const userId = user?.id;
   const pendingRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
   useEffect(() => {
-    if (isLoading || !userId || !hasSupabaseEnv()) {
+    if (isLoading || !userId || !session || !hasSupabaseEnv()) {
       return;
     }
 
     const pendingTimers = pendingRef.current;
-
+    const accessToken = session.access_token;
     const supabase = createClient();
+    let active = true;
+    let channel: RealtimeChannel | null = null;
+    let needsRecovery = false;
 
     const scheduleInvalidation = (
       table: RealtimeTable,
       payload: RealtimePostgresChangesPayload<Record<string, unknown>>,
     ) => {
       const context = toRealtimeChangeContext(table, payload);
+      if (
+        table === "settlements" &&
+        context.clientEventId &&
+        consumeRealtimeEcho(table, context.clientEventId)
+      ) {
+        return;
+      }
       const key = `${table}:${context.groupId ?? "all"}:${context.expenseId ?? "all"}`;
 
       const existing = pendingRef.current.get(key);
@@ -68,24 +81,49 @@ export function useRealtimeSync() {
       pendingRef.current.set(key, timer);
     };
 
-    const channel: RealtimeChannel = supabase.channel(`splitwise-sync:${userId}`);
+    const recover = () => {
+      recoverSettlementQueries(queryClient, userId);
+    };
 
-    for (const table of REALTIME_TABLES) {
-      channel.on(
-        "postgres_changes",
-        { event: "*", schema: "public", table },
-        (payload) => scheduleInvalidation(table, payload),
-      );
+    const handleOnline = () => {
+      if (needsRecovery) recover();
+    };
+    window.addEventListener("online", handleOnline);
+
+    async function subscribe() {
+      try {
+        await supabase.realtime.setAuth(accessToken);
+        if (!active) return;
+
+        channel = supabase.channel(`splitwise-sync:${userId}`);
+        for (const table of REALTIME_TABLES) {
+          channel.on(
+            "postgres_changes",
+            { event: "*", schema: "public", table },
+            (payload) => scheduleInvalidation(table, payload),
+          );
+        }
+
+        channel.subscribe((status) => {
+          if (!active) return;
+          const decision = evaluateRealtimeRecovery(needsRecovery, status);
+          needsRecovery = decision.needsRecovery;
+          if (decision.shouldRecover) recover();
+        });
+      } catch {
+        needsRecovery = true;
+      }
     }
-
-    channel.subscribe();
+    void subscribe();
 
     return () => {
+      active = false;
+      window.removeEventListener("online", handleOnline);
       for (const timer of pendingTimers.values()) {
         clearTimeout(timer);
       }
       pendingTimers.clear();
-      void supabase.removeChannel(channel);
+      if (channel) void supabase.removeChannel(channel);
     };
-  }, [isLoading, queryClient, userId]);
+  }, [isLoading, queryClient, session, userId]);
 }

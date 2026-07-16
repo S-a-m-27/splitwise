@@ -4,8 +4,11 @@ import { balancesKeys } from "@/features/balances/constants/query-keys";
 import { dashboardKeys } from "@/features/dashboard/constants/query-keys";
 import { expensesKeys } from "@/features/expenses/constants/query-keys";
 import { groupsKeys } from "@/features/groups/constants/query-keys";
-import { settlementsKeys } from "@/features/settlements/constants/query-keys";
 import { invitationsKeys } from "@/features/invitations/constants/query-keys";
+import {
+  invalidateSettlementDebts,
+  invalidateSettlementDerivedQueries,
+} from "@/features/settlements/cache/sync-settlement-queries";
 
 export type RealtimeTable =
   | "expenses"
@@ -22,6 +25,7 @@ export interface RealtimeChangeContext {
   table: RealtimeTable;
   groupId?: string;
   expenseId?: string;
+  clientEventId?: string;
 }
 
 /** Refetch TanStack Query caches after a peer changes shared data. */
@@ -41,6 +45,7 @@ export function invalidateQueriesForRealtimeChange(
     table === "expenses" || table === "expense_participants";
 
   const affectsSettlements = table === "settlements";
+  const affectsSettlementDebts = affectsBalances || table === "groups";
 
   const affectsGroups =
     table === "groups" ||
@@ -71,31 +76,23 @@ export function invalidateQueriesForRealtimeChange(
   }
 
   if (affectsSettlements) {
-    void queryClient.invalidateQueries({ queryKey: settlementsKeys.list(userId) });
-    void queryClient.invalidateQueries({ queryKey: settlementsKeys.debts(userId) });
-    if (groupId) {
-      void queryClient.invalidateQueries({
-        queryKey: settlementsKeys.list(userId, groupId),
-      });
-    }
+    invalidateSettlementDerivedQueries(queryClient, userId, { groupId });
+  } else if (affectsSettlementDebts) {
+    invalidateSettlementDebts(queryClient, userId);
   }
 
-  if (affectsBalances) {
+  if (affectsBalances && !affectsSettlements) {
     void queryClient.invalidateQueries({
       queryKey: balancesKeys.snapshot(userId),
     });
   }
 
-  if (
-    affectsExpenses ||
-    affectsSettlements ||
-    affectsGroups
-  ) {
+  if (affectsExpenses || affectsGroups) {
     void queryClient.invalidateQueries({ queryKey: activityKeys.feeds() });
     void queryClient.invalidateQueries({ queryKey: dashboardKeys.detail(userId) });
   }
 
-  if (groupId) {
+  if (groupId && !affectsSettlements) {
     void queryClient.invalidateQueries({
       queryKey: groupsKeys.detail(groupId, userId),
     });

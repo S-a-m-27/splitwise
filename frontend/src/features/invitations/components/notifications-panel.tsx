@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { groupDetailRoute, ROUTES } from "@/constants/routes";
@@ -29,16 +29,14 @@ export function NotificationsPanel({ open, onOpenChange }: NotificationsPanelPro
   const { pending, isLoading } = useInvitationHistory();
   const acceptInvitation = useAcceptInvitation();
   const declineInvitation = useDeclineInvitation();
-  const [visibleInvitations, setVisibleInvitations] = useState<readonly ReceivedInvitationItem[]>(
-    [],
+  const [dismissedIds, setDismissedIds] = useState<ReadonlySet<string>>(
+    () => new Set(),
   );
   const [processingId, setProcessingId] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (open) {
-      setVisibleInvitations(pending);
-    }
-  }, [open, pending]);
+  const visibleInvitations = useMemo(
+    () => pending.filter((invitation) => !dismissedIds.has(invitation.id)),
+    [dismissedIds, pending],
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -56,7 +54,7 @@ export function NotificationsPanel({ open, onOpenChange }: NotificationsPanelPro
     acceptInvitation.mutate(invitation.id, {
       onSuccess: () => {
         invitationToast.accepted(invitation.groupName);
-        setVisibleInvitations((current) => current.filter((item) => item.id !== invitation.id));
+        setDismissedIds((current) => new Set(current).add(invitation.id));
         onOpenChange(false);
         router.push(groupDetailRoute(invitation.groupId));
       },
@@ -70,7 +68,7 @@ export function NotificationsPanel({ open, onOpenChange }: NotificationsPanelPro
     declineInvitation.mutate(invitation.id, {
       onSuccess: () => {
         invitationToast.declined();
-        setVisibleInvitations((current) => current.filter((item) => item.id !== invitation.id));
+        setDismissedIds((current) => new Set(current).add(invitation.id));
       },
       onError: (error) => invitationToast.error(getInvitationErrorMessage(error)),
       onSettled: () => setProcessingId(null),

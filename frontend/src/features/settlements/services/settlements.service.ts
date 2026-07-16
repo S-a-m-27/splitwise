@@ -14,9 +14,11 @@ import type {
   SettlementListItem,
 } from "@/features/settlements/types";
 import { buildDebtBreakdown } from "@/features/settlements/utils/build-debt-breakdown";
+import { createSettlementSchema } from "@/features/settlements/validation/settlements.schema";
 import { formatCurrency } from "@/features/dashboard/utils/format-currency";
 import { formatMoney } from "@/lib/currency";
 import { createClient as createBrowserClient } from "@/lib/supabase/client";
+import { registerRealtimeEcho } from "@/lib/realtime/realtime-echo-registry";
 import type { SettlementRow } from "@/types/database.types";
 
 export { getSettlementsErrorMessage };
@@ -31,6 +33,7 @@ const SETTLEMENT_LIST_SELECT = `
   amount,
   notes,
   created_at,
+  client_settlement_id,
   groups(id, name, icon),
   from_user:profiles!settlements_from_user_id_fkey(id, full_name),
   to_user:profiles!settlements_to_user_id_fkey(id, full_name),
@@ -45,7 +48,9 @@ const SETTLEMENT_BALANCE_SELECT = `
   from_guest_id,
   to_user_id,
   to_guest_id,
-  amount
+  amount,
+  notes,
+  created_at
 `;
 
 interface SettlementListRow extends SettlementRow {
@@ -59,6 +64,14 @@ interface SettlementListRow extends SettlementRow {
 interface GuestNameRow {
   id: string;
   display_name: string;
+}
+
+function toSettlementsServiceError(error: {
+  message: string;
+  code?: string;
+}): SettlementsServiceError {
+  const normalized = normalizeSettlementsError(error);
+  return new SettlementsServiceError(normalized.code, normalized.message);
 }
 
 async function requireUserId(): Promise<string> {
@@ -121,6 +134,7 @@ function mapSettlementListItem(row: SettlementListRow): SettlementListItem {
     amountLabel: formatCurrency(amount),
     notes: row.notes ?? undefined,
     createdAt: row.created_at,
+    clientSettlementId: row.client_settlement_id ?? undefined,
   };
 }
 
@@ -132,6 +146,8 @@ async function fetchParticipantNames(): Promise<Map<string, string>> {
     supabase.from("group_members").select("user_id, profiles(full_name)"),
     supabase.from("group_guests").select("id, display_name"),
   ]);
+  if (membersResult.error) throw toSettlementsServiceError(membersResult.error);
+  if (guestsResult.error) throw toSettlementsServiceError(guestsResult.error);
 
   for (const row of (membersResult.data ?? []) as {
     user_id: string;
@@ -163,7 +179,7 @@ export const settlementsService = {
 
     const { data, error } = await query;
     if (error) {
-      throw new SettlementsServiceError("UNKNOWN", error.message);
+      throw toSettlementsServiceError(error);
     }
 
     return ((data ?? []) as SettlementListRow[]).map(mapSettlementListItem);
@@ -184,13 +200,16 @@ export const settlementsService = {
     ]);
 
     if (expensesResult.error) {
-      throw new SettlementsServiceError("UNKNOWN", expensesResult.error.message);
+      throw toSettlementsServiceError(expensesResult.error);
     }
     if (settlementsResult.error) {
-      throw new SettlementsServiceError("UNKNOWN", settlementsResult.error.message);
+      throw toSettlementsServiceError(settlementsResult.error);
     }
 
     const groupsResult = await supabase.from("groups").select("id, name, icon");
+    if (groupsResult.error) {
+      throw toSettlementsServiceError(groupsResult.error);
+    }
     const groupMap = new Map(
       (groupsResult.data ?? []).map((g) => [g.id, { name: g.name, icon: g.icon }]),
     );
@@ -211,7 +230,7 @@ export const settlementsService = {
     const settlementMeta = new Map(
       (settlementsResult.data ?? []).map((row) => [
         row.id,
-        { notes: undefined, createdAt: "" },
+        { notes: row.notes ?? undefined, createdAt: row.created_at },
       ]),
     );
 
@@ -296,32 +315,48 @@ export const settlementsService = {
     await requireUserId();
     const supabase = createBrowserClient();
 
-    if (input.amount <= 0) {
-      throw new SettlementsServiceError("VALIDATION_ERROR", "Amount must be greater than zero.");
+    const parsed = createSettlementSchema.safeParse(input);
+    if (!parsed.success) {
+      throw new SettlementsServiceError(
+        "VALIDATION_ERROR",
+        parsed.error.issues[0]?.message ?? "Invalid settlement details.",
+      );
+    }
+    const validated = parsed.data;
+    if (validated.clientSettlementId) {
+      registerRealtimeEcho("settlements", validated.clientSettlementId);
     }
 
     const { data, error } = await supabase.rpc("create_settlement", {
-      p_group_id: input.groupId,
-      p_from_participant_id: input.fromUserId,
-      p_to_participant_id: input.toUserId,
-      p_amount: input.amount,
-      p_notes: input.notes || null,
+      p_group_id: validated.groupId,
+      p_from_participant_id: validated.fromUserId,
+      p_to_participant_id: validated.toUserId,
+      p_amount: validated.amount,
+      p_notes: validated.notes || null,
+      p_client_settlement_id: validated.clientSettlementId ?? null,
     });
 
     if (error) {
-      const normalized = normalizeSettlementsError(error);
-      throw new SettlementsServiceError(normalized.code, normalized.message);
+      throw toSettlementsServiceError(error);
     }
     if (!data) {
       throw new SettlementsServiceError("UNKNOWN", "Failed to record settlement.");
     }
 
-    const list = await this.getSettlements(input.groupId);
-    const created = list.find((item) => item.id === data.id);
-    if (!created) {
+    const { data: createdRow, error: createdError } = await supabase
+      .from("settlements")
+      .select(SETTLEMENT_LIST_SELECT)
+      .eq("id", data.id)
+      .eq("group_id", validated.groupId)
+      .maybeSingle();
+
+    if (createdError) {
+      throw toSettlementsServiceError(createdError);
+    }
+    if (!createdRow) {
       throw new SettlementsServiceError("UNKNOWN", "Settlement saved but could not be loaded.");
     }
 
-    return created;
+    return mapSettlementListItem(createdRow as SettlementListRow);
   },
 };

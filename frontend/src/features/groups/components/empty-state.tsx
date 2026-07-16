@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { META_TEXT_CLASS } from "@/lib/typography";
 import { cn } from "@/lib/utils";
 
@@ -47,12 +47,15 @@ export function EmptyState({
 
       {actionLabel &&
         (actionHref ? (
-          <Button
-            render={<Link href={actionHref} />}
-            className="mt-5 h-11 min-w-[10rem] px-4"
+          <Link
+            href={actionHref}
+            className={cn(
+              buttonVariants(),
+              "mt-5 h-11 min-w-[10rem] px-4",
+            )}
           >
             {actionLabel}
-          </Button>
+          </Link>
         ) : (
           <Button
             type="button"

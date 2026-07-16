@@ -1,6 +1,15 @@
 export type SettlementsErrorCode =
   | "NO_SESSION"
   | "VALIDATION_ERROR"
+  | "PERMISSION_DENIED"
+  | "NETWORK_ERROR"
+  | "SETTLEMENT_NOT_ALLOWED"
+  | "DEBT_ALREADY_SETTLED"
+  | "SETTLEMENT_TOO_LARGE"
+  | "INVALID_AMOUNT"
+  | "SETTLEMENT_CONFLICT"
+  | "GROUP_NOT_FOUND"
+  | "OUTSTANDING_DEBT_NOT_FOUND"
   | "NOT_FOUND"
   | "UNKNOWN";
 
@@ -19,11 +28,77 @@ export function normalizeSettlementsError(error: {
   code?: string;
 }): { code: SettlementsErrorCode; message: string } {
   const message = error.message;
+  const domainCode = message.split(":", 1)[0] ?? "";
 
-  if (message.includes("Not authenticated")) {
+  const domainErrors: Partial<
+    Record<SettlementsErrorCode | string, { code: SettlementsErrorCode; message: string }>
+  > = {
+    SettlementNotAllowed: {
+      code: "SETTLEMENT_NOT_ALLOWED",
+      message: "Only the payer or receiver can record this settlement.",
+    },
+    DebtAlreadySettled: {
+      code: "DEBT_ALREADY_SETTLED",
+      message: "This balance has already been settled. Refresh to see the latest balances.",
+    },
+    SettlementTooLarge: {
+      code: "SETTLEMENT_TOO_LARGE",
+      message: "The amount exceeds the remaining balance. Refresh and try again.",
+    },
+    InvalidSettlementAmount: {
+      code: "INVALID_AMOUNT",
+      message: "Enter a positive amount with no more than two decimal places.",
+    },
+    SettlementConflict: {
+      code: "SETTLEMENT_CONFLICT",
+      message: "This settlement request conflicts with an earlier attempt.",
+    },
+    GroupNotFound: {
+      code: "GROUP_NOT_FOUND",
+      message: "This group no longer exists.",
+    },
+    OutstandingDebtNotFound: {
+      code: "OUTSTANDING_DEBT_NOT_FOUND",
+      message: "No outstanding balance remains between these participants.",
+    },
+    InvalidSettlementRequest: {
+      code: "VALIDATION_ERROR",
+      message: "The settlement details are invalid.",
+    },
+  };
+  const domainError = domainErrors[domainCode];
+  if (domainError) return domainError;
+
+  if (
+    message.includes("Not authenticated") ||
+    message.includes("UnauthorizedSettlement: authentication")
+  ) {
     return {
       code: "NO_SESSION",
       message: "Your session has expired. Please sign in again.",
+    };
+  }
+
+  if (
+    error.code === "42501" ||
+    message.toLowerCase().includes("permission denied") ||
+    message.toLowerCase().includes("access denied") ||
+    message.includes("UnauthorizedSettlement:")
+  ) {
+    return {
+      code: "PERMISSION_DENIED",
+      message: "You do not have permission to record this settlement.",
+    };
+  }
+
+  if (
+    message.toLowerCase().includes("failed to fetch") ||
+    message.toLowerCase().includes("network") ||
+    message.toLowerCase().includes("offline")
+  ) {
+    return {
+      code: "NETWORK_ERROR",
+      message: "Network unavailable. Check your connection and try again.",
     };
   }
 

@@ -1,9 +1,4 @@
-import { authService } from "@/features/auth/services/auth.service";
-import {
-  InvitationServiceError,
-  normalizeInvitationError,
-} from "@/features/invitations/errors/invitation.errors";
-import { createClient as createBrowserClient } from "@/lib/supabase/client";
+import { notificationService as sharedNotificationService } from "@/features/notifications/services/notification.service";
 
 export interface InvitationNotificationRow {
   readonly id: string;
@@ -21,47 +16,34 @@ export interface InvitationNotificationRow {
   readonly created_at: string;
 }
 
-async function requireUserId(): Promise<string> {
-  const { user, error } = await authService.getCurrentUser();
-  if (error || !user) {
-    throw new InvitationServiceError(
-      "NO_SESSION",
-      "Your session has expired. Please sign in again.",
-    );
-  }
-  return user.id;
-}
-
-function throwIfSupabaseError(error: { message: string } | null): void {
-  if (!error) return;
-  const normalized = normalizeInvitationError(error);
-  throw new InvitationServiceError(normalized.code, normalized.message);
-}
-
 export const notificationService = {
-  async getUnreadCount(): Promise<number> {
-    await requireUserId();
-    const supabase = createBrowserClient();
-    const { data, error } = await supabase.rpc("get_unread_notification_count");
-    throwIfSupabaseError(error);
-    return typeof data === "number" ? data : 0;
-  },
+  getUnreadCount: () =>
+    sharedNotificationService.getUnreadCount([
+      "invitation_received",
+      "invitation_linked",
+      "invitation_accepted",
+      "invitation_declined",
+    ]),
 
   async getInvitationNotifications(): Promise<InvitationNotificationRow[]> {
-    await requireUserId();
-    const supabase = createBrowserClient();
-    const { data, error } = await supabase.rpc("get_invitation_notifications");
-    throwIfSupabaseError(error);
-    return (data ?? []) as InvitationNotificationRow[];
+    const rows = await sharedNotificationService.listNotifications([
+      "invitation_received",
+      "invitation_linked",
+      "invitation_accepted",
+      "invitation_declined",
+    ]);
+    return rows.map((row) => ({
+      id: row.id,
+      user_id: row.userId,
+      type: row.type as InvitationNotificationRow["type"],
+      invitation_id: row.invitationId,
+      group_id: row.groupId,
+      title: row.title,
+      body: row.body,
+      read_at: row.readAt,
+      created_at: row.createdAt,
+    }));
   },
 
-  async markAsRead(notificationId: string): Promise<void> {
-    await requireUserId();
-    const supabase = createBrowserClient();
-    const { error } = await supabase
-      .from("notifications")
-      .update({ read_at: new Date().toISOString() })
-      .eq("id", notificationId);
-    throwIfSupabaseError(error);
-  },
+  markAsRead: sharedNotificationService.markAsRead,
 };

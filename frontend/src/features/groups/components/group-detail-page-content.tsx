@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import Link from "next/link";
-import { Receipt } from "lucide-react";
+import { HandCoins, Receipt } from "lucide-react";
 import {
   expenseNewRoute,
   ROUTES,
@@ -42,6 +42,8 @@ import {
 import { getGroupsErrorMessage } from "@/features/groups/services/groups.errors";
 import { LIST_STACK_CLASS, PageStack } from "@/components/layout/page-layout";
 import { Button } from "@/components/ui/button";
+import { GroupChatTab } from "@/features/chat/components/group-chat-tab";
+import { GroupSettlementsPanel } from "@/features/settlements/components/group-settlements-panel";
 
 interface GroupDetailPageContentProps {
   groupId: string;
@@ -55,8 +57,14 @@ export function GroupDetailPageContent({ groupId }: GroupDetailPageContentProps)
   const { data: groupActivities, isLoading: activitiesLoading } = useActivityFeed({
     groupId,
   });
-  const { balanceSummary, memberBalances, isLoading: balancesLoading } =
-    useGroupBalances(groupId);
+  const {
+    balanceSummary,
+    memberBalances,
+    isLoading: balancesLoading,
+    isError: balancesError,
+    errorMessage: balancesErrorMessage,
+    refetch: refetchBalances,
+  } = useGroupBalances(groupId);
   const deleteGroup = useDeleteGroup();
   const leaveGroup = useLeaveGroup();
   const addGuest = useAddGuestByName(groupId);
@@ -122,6 +130,9 @@ export function GroupDetailPageContent({ groupId }: GroupDetailPageContentProps)
     ...member,
     balance: memberBalances[member.id] ?? 0,
   }));
+  const settleableBalanceCount = Object.values(memberBalances).filter(
+    (amount) => Math.abs(amount) >= 0.01,
+  ).length;
 
   return (
     <DashboardShell>
@@ -142,6 +153,12 @@ export function GroupDetailPageContent({ groupId }: GroupDetailPageContentProps)
 
         <GroupHeader group={group} />
         <BalanceSummary balances={balanceSummary} />
+        {balancesError && (
+          <DashboardErrorState
+            message={balancesErrorMessage ?? "Unable to load group balances."}
+            onRetry={() => refetchBalances()}
+          />
+        )}
 
         {canManageInvites && (
           <GroupPendingInvitationsSection
@@ -152,7 +169,7 @@ export function GroupDetailPageContent({ groupId }: GroupDetailPageContentProps)
           />
         )}
 
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
           {canManageInvites && (
             <InviteMembersButton
               groupId={group.id}
@@ -160,9 +177,20 @@ export function GroupDetailPageContent({ groupId }: GroupDetailPageContentProps)
               groupIcon={group.icon}
             />
           )}
+          {settleableBalanceCount > 0 && (
+            <Button
+              type="button"
+              variant="outline"
+              className="h-11 min-w-[9rem] flex-1 gap-2"
+              onClick={() => setActiveTab("balances")}
+            >
+              <HandCoins className="size-4" aria-hidden="true" />
+              Settle up
+            </Button>
+          )}
           <Button
             render={<Link href={expenseNewRoute(group.id)} />}
-            className="h-11 flex-1 gap-2"
+            className="h-11 min-w-[9rem] flex-1 gap-2"
           >
             <Receipt className="size-4" aria-hidden="true" />
             Add expense
@@ -173,6 +201,7 @@ export function GroupDetailPageContent({ groupId }: GroupDetailPageContentProps)
           activeTab={activeTab}
           onTabChange={setActiveTab}
           expenseCount={mappedExpenses.length}
+          balanceCount={settleableBalanceCount}
           memberCount={group.members.length}
           activityCount={groupActivities.length}
         />
@@ -233,6 +262,8 @@ export function GroupDetailPageContent({ groupId }: GroupDetailPageContentProps)
             </div>
           )}
 
+          {activeTab === "balances" && <GroupSettlementsPanel groupId={group.id} />}
+
           {activeTab === "activity" &&
             (activitiesLoading ? (
               <ul className={LIST_STACK_CLASS}>
@@ -256,6 +287,15 @@ export function GroupDetailPageContent({ groupId }: GroupDetailPageContentProps)
                 ))}
               </div>
             ))}
+
+          {activeTab === "chat" && (
+            <GroupChatTab
+              groupId={group.id}
+              groupName={group.name}
+              groupIcon={group.icon}
+              memberCount={group.members.length}
+            />
+          )}
         </div>
       </PageStack>
 

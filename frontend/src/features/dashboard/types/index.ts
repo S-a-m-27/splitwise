@@ -28,7 +28,7 @@ export interface NavItem {
   /** Shorter label for narrow bottom nav */
   shortLabel: string;
   href: string;
-  icon: "dashboard" | "groups" | "activity" | "profile";
+  icon: "dashboard" | "groups" | "messages" | "activity" | "profile";
 }
 
 export interface GroupPreview {

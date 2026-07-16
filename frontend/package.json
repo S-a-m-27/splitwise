@@ -17,7 +17,8 @@
     "format:check": "prettier --check .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "verify:chat:local": "node scripts/verify-chat-two-client.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",

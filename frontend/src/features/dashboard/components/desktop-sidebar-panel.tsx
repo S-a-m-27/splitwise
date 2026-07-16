@@ -7,7 +7,8 @@ import {
 } from "lucide-react";
 import { APP_CONFIG } from "@/constants/config";
 import { ROUTES } from "@/constants/routes";
-import { DASHBOARD_NAV_ICONS } from "@/features/dashboard/constants/nav-icons";
+import { DASHBOARD_NAV_ICONS, resolveNavIcon } from "@/features/dashboard/constants/nav-icons";
+import { resolveNavHref } from "@/features/dashboard/constants/nav-items";
 import { LogoutButton } from "@/features/auth/components/logout-button";
 import { UserAvatar } from "@/features/dashboard/components/user-avatar";
 import { isNavActive } from "@/features/dashboard/utils/is-nav-active";
@@ -131,13 +132,18 @@ export function DesktopSidebarPanel({
           Menu
         </p>
         {items.map((item) => {
-          const Icon = DASHBOARD_NAV_ICONS[item.icon];
-          const active = isNavActive(pathname, item.href);
+          const Icon = resolveNavIcon(item.icon);
+          const href = resolveNavHref(item);
+          const active = isNavActive(pathname, href);
+
+          if (!href) {
+            return null;
+          }
 
           return (
             <Link
               key={item.id}
-              href={item.href}
+              href={href}
               prefetch
               className={cn(
                 "group relative flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-semibold transition-all duration-200",

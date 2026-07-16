@@ -11,6 +11,7 @@ export interface SettlementListItem {
   amountLabel: string;
   notes?: string;
   createdAt: string;
+  clientSettlementId?: string;
 }
 
 export type DebtBreakdownLineType =
@@ -60,4 +61,5 @@ export interface CreateSettlementInput {
   toUserId: string;
   amount: number;
   notes?: string;
+  clientSettlementId?: string;
 }

@@ -6,6 +6,8 @@ import { META_TEXT_CLASS } from "@/lib/typography";
 import { cn } from "@/lib/utils";
 import { ArrowDownLeft, ArrowUpRight, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { UserAvatar } from "@/features/dashboard/components/user-avatar";
+import { getInitials } from "@/features/dashboard/utils/get-initials";
 
 interface DebtCardProps {
   debt: OutstandingDebt;
@@ -19,6 +21,7 @@ export function DebtCard({ debt, onSettle, onViewReport, className }: DebtCardPr
   const isOwed = debt.direction === "owed_to_you";
   const previewLines = debt.breakdown.lines.slice(0, 2);
   const hasMoreLines = debt.breakdown.lines.length > previewLines.length;
+  const personName = isOwed ? debt.fromUserName : debt.toUserName;
 
   return (
     <article
@@ -29,15 +32,12 @@ export function DebtCard({ debt, onSettle, onViewReport, className }: DebtCardPr
       )}
     >
       <div className="flex items-start gap-3">
-        <span
-          className={cn(
-            "flex size-11 shrink-0 items-center justify-center rounded-xl text-lg",
-            isOwed ? "bg-emerald-500/12" : "bg-destructive/10",
-          )}
-          aria-hidden="true"
-        >
-          {debt.groupIcon}
-        </span>
+        <UserAvatar
+          name={personName}
+          initials={getInitials(personName)}
+          size="md"
+          className={isOwed ? "ring-emerald-500/25" : "ring-destructive/20"}
+        />
 
         <div className="min-w-0 flex-1">
           <p className={cn("truncate", META_TEXT_CLASS)}>{debt.groupName}</p>
@@ -47,14 +47,26 @@ export function DebtCard({ debt, onSettle, onViewReport, className }: DebtCardPr
               : `You owe ${debt.toUserName} ${debt.amountLabel}`}
           </p>
 
-          {(debt.breakdown.expenseCount > 0 || debt.breakdown.settlementCount > 0) && (
-            <p className={cn("mt-2", META_TEXT_CLASS)}>
-              {debt.breakdown.expenseCount} expense
-              {debt.breakdown.expenseCount === 1 ? "" : "s"}
-              {debt.breakdown.settlementCount > 0 &&
-                ` · ${debt.breakdown.settlementCount} payment${debt.breakdown.settlementCount === 1 ? "" : "s"}`}
-            </p>
-          )}
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <span
+              className={cn(
+                "rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide",
+                isOwed
+                  ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
+                  : "bg-destructive/10 text-destructive",
+              )}
+            >
+              Outstanding
+            </span>
+            {(debt.breakdown.expenseCount > 0 || debt.breakdown.settlementCount > 0) && (
+              <span className={META_TEXT_CLASS}>
+                {debt.breakdown.expenseCount} expense
+                {debt.breakdown.expenseCount === 1 ? "" : "s"}
+                {debt.breakdown.settlementCount > 0 &&
+                  ` · ${debt.breakdown.settlementCount} payment${debt.breakdown.settlementCount === 1 ? "" : "s"}`}
+              </span>
+            )}
+          </div>
         </div>
 
         <span
@@ -121,6 +133,11 @@ export function DebtCard({ debt, onSettle, onViewReport, className }: DebtCardPr
           className="h-11 flex-1 rounded-xl font-semibold"
           variant={isOwed ? "outline" : "default"}
           onClick={() => onSettle(debt)}
+          aria-label={
+            isOwed
+              ? `Record ${debt.amountLabel} payment from ${personName}`
+              : `Settle ${debt.amountLabel} with ${personName}`
+          }
         >
           {isOwed ? "Record payment" : "Settle up"}
         </Button>

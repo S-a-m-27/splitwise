@@ -1,0 +1,2 @@
+export const CHAT_INBOX_STALE_TIME_MS = 30_000;
+export const CHAT_MESSAGES_STALE_TIME_MS = 10_000;
