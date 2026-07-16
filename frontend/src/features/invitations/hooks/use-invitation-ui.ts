@@ -4,6 +4,7 @@ export {
   useInvitationSearch,
   usePendingInvitations,
   useInvitationBadge,
+  useInvitationNotifications,
   useInvitationHistory,
   useInvitationDetail,
   useCreateInvitation,

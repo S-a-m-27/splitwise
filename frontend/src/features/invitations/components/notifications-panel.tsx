@@ -1,17 +1,19 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { groupDetailRoute, ROUTES } from "@/constants/routes";
 import { InvitationEmptyState } from "@/features/invitations/components/invitation-empty-state";
 import { InvitationSkeleton } from "@/features/invitations/components/invitation-skeleton";
 import { NotificationInvitationItem } from "@/features/invitations/components/notification-invitation-item";
+import { InvitationNotificationItem } from "@/features/invitations/components/invitation-notification-item";
 import { invitationToast } from "@/features/invitations/components/invitation-toast";
 import {
   useAcceptInvitation,
   useDeclineInvitation,
   useInvitationHistory,
+  useInvitationNotifications,
 } from "@/features/invitations/hooks/use-invitation-ui";
 import { getInvitationErrorMessage } from "@/features/invitations/services/invitation.service";
 import type { ReceivedInvitationItem } from "@/features/invitations/types/ui";
@@ -26,17 +28,53 @@ interface NotificationsPanelProps {
 
 export function NotificationsPanel({ open, onOpenChange }: NotificationsPanelProps) {
   const router = useRouter();
-  const { pending, isLoading } = useInvitationHistory();
+  const { pending, isLoading: invitationsLoading } = useInvitationHistory();
+  const {
+    notifications,
+    isLoading: notificationsLoading,
+    markAsRead,
+  } = useInvitationNotifications();
   const acceptInvitation = useAcceptInvitation();
   const declineInvitation = useDeclineInvitation();
   const [dismissedIds, setDismissedIds] = useState<ReadonlySet<string>>(
     () => new Set(),
   );
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const lastMarkedIds = useRef("");
   const visibleInvitations = useMemo(
     () => pending.filter((invitation) => !dismissedIds.has(invitation.id)),
     [dismissedIds, pending],
   );
+  const visibleInvitationIds = useMemo(
+    () => new Set(visibleInvitations.map((invitation) => invitation.id)),
+    [visibleInvitations],
+  );
+  const visibleNotifications = useMemo(
+    () =>
+      notifications
+        .filter(
+          (notification) =>
+            notification.type !== "invitation_received" ||
+            !notification.invitation_id ||
+            !visibleInvitationIds.has(notification.invitation_id),
+        )
+        .slice(0, 20),
+    [notifications, visibleInvitationIds],
+  );
+  const unreadNotificationIds = useMemo(
+    () => notifications.filter((item) => !item.read_at).map((item) => item.id),
+    [notifications],
+  );
+  const isLoading = invitationsLoading || notificationsLoading;
+  const visibleCount = visibleInvitations.length + visibleNotifications.length;
+
+  useEffect(() => {
+    if (!open || unreadNotificationIds.length === 0) return;
+    const key = unreadNotificationIds.join(",");
+    if (lastMarkedIds.current === key) return;
+    lastMarkedIds.current = key;
+    markAsRead(unreadNotificationIds);
+  }, [markAsRead, open, unreadNotificationIds]);
 
   useEffect(() => {
     if (!open) return;
@@ -106,10 +144,9 @@ export function NotificationsPanel({ open, onOpenChange }: NotificationsPanelPro
             >
               Notifications
             </h2>
-            {visibleInvitations.length > 0 && (
+            {visibleCount > 0 && (
               <p className={cn("mt-0.5", META_TEXT_CLASS)}>
-                {visibleInvitations.length} pending invitation
-                {visibleInvitations.length === 1 ? "" : "s"}
+                {visibleCount} notification{visibleCount === 1 ? "" : "s"}
               </p>
             )}
           </div>
@@ -130,7 +167,7 @@ export function NotificationsPanel({ open, onOpenChange }: NotificationsPanelPro
             </div>
           )}
 
-          {!isLoading && visibleInvitations.length === 0 && (
+          {!isLoading && visibleCount === 0 && (
             <div className="p-4">
               <InvitationEmptyState variant="no_invitations" />
             </div>
@@ -145,6 +182,17 @@ export function NotificationsPanel({ open, onOpenChange }: NotificationsPanelPro
                   onAccept={handleAccept}
                   onDecline={handleDecline}
                   disabled={processingId === invitation.id}
+                />
+              ))}
+            </div>
+          )}
+
+          {!isLoading && visibleNotifications.length > 0 && (
+            <div role="list" aria-label="Invitation notifications">
+              {visibleNotifications.map((notification) => (
+                <InvitationNotificationItem
+                  key={notification.id}
+                  notification={notification}
                 />
               ))}
             </div>

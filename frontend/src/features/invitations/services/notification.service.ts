@@ -46,4 +46,5 @@ export const notificationService = {
   },
 
   markAsRead: sharedNotificationService.markAsRead,
+  markManyAsRead: sharedNotificationService.markManyAsRead,
 };

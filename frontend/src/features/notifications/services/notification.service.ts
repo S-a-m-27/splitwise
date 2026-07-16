@@ -77,4 +77,16 @@ export const notificationService = {
       .eq("user_id", userId);
     if (error) throw error;
   },
+
+  async markManyAsRead(notificationIds: string[]): Promise<void> {
+    if (notificationIds.length === 0) return;
+    const userId = await requireUserId();
+    const { error } = await createClient()
+      .from("notifications")
+      .update({ read_at: new Date().toISOString() })
+      .eq("user_id", userId)
+      .is("read_at", null)
+      .in("id", notificationIds);
+    if (error) throw error;
+  },
 };

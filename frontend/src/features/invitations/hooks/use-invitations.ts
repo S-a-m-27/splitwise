@@ -162,6 +162,41 @@ export function useInvitationBadge() {
   };
 }
 
+export function useInvitationNotifications() {
+  const queryClient = useQueryClient();
+  const { userId, isAuthenticated, authLoading } = useInvitationsAuth();
+  const queryKey = invitationsKeys.notifications(userId ?? "");
+  const query = useQuery({
+    queryKey,
+    queryFn: () => notificationService.getInvitationNotifications(),
+    enabled: isAuthenticated && !!userId && !authLoading,
+    staleTime: INVITATIONS_STALE_TIME_MS,
+  });
+  const markReadMutation = useMutation({
+    mutationFn: (notificationIds: string[]) =>
+      notificationService.markManyAsRead(notificationIds),
+    onSuccess: (_data, notificationIds) => {
+      const readAt = new Date().toISOString();
+      queryClient.setQueryData<Awaited<ReturnType<typeof notificationService.getInvitationNotifications>>>(
+        queryKey,
+        (current) =>
+          current?.map((notification) =>
+            notificationIds.includes(notification.id)
+              ? { ...notification, read_at: readAt }
+              : notification,
+          ),
+      );
+      if (userId) queryClient.setQueryData(invitationsKeys.badge(userId), 0);
+    },
+  });
+
+  return {
+    notifications: query.data ?? [],
+    isLoading: query.isLoading,
+    markAsRead: markReadMutation.mutate,
+  };
+}
+
 async function enrichReceivedInvitations(): Promise<ReceivedInvitationItem[]> {
   const invitations = await invitationService.getReceivedInvitations();
   if (invitations.length === 0) return [];
