@@ -2,6 +2,7 @@ import type {
   ConversationDetail,
   ConversationMember,
   MessageListItem,
+  MessageReadReceipt,
 } from "@/features/chat/types";
 
 export type ChatDomainEvent =
@@ -16,6 +17,11 @@ export type ChatDomainEvent =
       userId: string;
       messageId: string | null;
       unreadCount: number;
+    }
+  | {
+      type: "receipt.created";
+      conversationId: string;
+      receipt: MessageReadReceipt;
     }
   | { type: "presence.updated"; conversationId: string; onlineUserIds: string[] }
   | { type: "typing.updated"; conversationId: string; typingUserIds: string[] }

@@ -15,8 +15,11 @@ import { chatRealtimeService } from "@/features/chat/services/chat-realtime.serv
 import { ChatActivityService } from "@/features/chat/services/chat-activity.service";
 import { requireChatUserId } from "@/features/chat/services/chat-session";
 import { messageService } from "@/features/chat/services/message.service";
+import { readReceiptService } from "@/features/chat/services/read-receipt.service";
 import type {
   ConversationSnapshot,
+  DeleteMessageCommand,
+  EditMessageCommand,
   MarkConversationReadCommand,
   MessageListItem,
   SendMessageCommand,
@@ -32,8 +35,13 @@ export interface LifecycleDependencies {
   >;
   messages: Pick<
     typeof messageService,
-    "listMessagePage" | "sendMessage" | "markConversationRead"
+    | "listMessagePage"
+    | "sendMessage"
+    | "markConversationRead"
+    | "editMessage"
+    | "deleteMessage"
   >;
+  receipts: Pick<typeof readReceiptService, "listReadReceipts">;
   getCurrentUserId: () => Promise<string>;
 }
 
@@ -56,6 +64,7 @@ export class ChatLifecycleService implements ChatLifecycleGateway {
       realtime: chatRealtimeService,
       conversations: conversationService,
       messages: messageService,
+      receipts: readReceiptService,
       getCurrentUserId: requireChatUserId,
     },
   ) {
@@ -197,6 +206,26 @@ export class ChatLifecycleService implements ChatLifecycleGateway {
     });
   }
 
+  async editMessage(command: EditMessageCommand): Promise<MessageListItem> {
+    const message = await this.dependencies.messages.editMessage(command);
+    this.handleEvent({
+      type: "message.updated",
+      conversationId: message.conversationId,
+      message,
+    });
+    return message;
+  }
+
+  async deleteMessage(command: DeleteMessageCommand): Promise<MessageListItem> {
+    const message = await this.dependencies.messages.deleteMessage(command);
+    this.handleEvent({
+      type: "message.updated",
+      conversationId: message.conversationId,
+      message,
+    });
+    return message;
+  }
+
   async closeConversation(invalidateOpen = true): Promise<void> {
     if (invalidateOpen) this.openGeneration += 1;
     if (this.recoveryTimer) {
@@ -221,10 +250,11 @@ export class ChatLifecycleService implements ChatLifecycleGateway {
     conversationId: string,
     userId: string,
   ): Promise<ConversationSnapshot> {
-    const [conversation, members, messagePage] = await Promise.all([
+    const [conversation, members, messagePage, receipts] = await Promise.all([
       this.dependencies.conversations.getConversation(conversationId),
       this.dependencies.conversations.listConversationMembers(conversationId),
       this.dependencies.messages.listMessagePage({ conversationId, limit: 50 }),
+      this.dependencies.receipts.listReadReceipts(conversationId),
     ]);
     const currentMember = members.find((member) => member.userId === userId);
     if (!currentMember) {
@@ -236,6 +266,7 @@ export class ChatLifecycleService implements ChatLifecycleGateway {
       members,
       messages: messagePage.items,
       currentMember,
+      receipts,
     };
   }
 

@@ -142,6 +142,35 @@ export class ChatRealtimeService implements ChatRealtimeGateway {
             conversationId,
             member: mapConversationMember(newRow(payload) as never),
           }),
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "message_reads",
+          filter: `conversation_id=eq.${conversationId}`,
+        },
+        (payload) => {
+          const row = newRow(payload) as {
+            id: string;
+            conversation_id: string;
+            user_id: string;
+            message_id: string;
+            read_at: string;
+          };
+          emitTo(listeners, {
+            type: "receipt.created",
+            conversationId,
+            receipt: {
+              id: row.id,
+              conversationId: row.conversation_id,
+              userId: row.user_id,
+              messageId: row.message_id,
+              readAt: row.read_at,
+            },
+          });
+        },
       );
 
     channel.subscribe((status, error) => {

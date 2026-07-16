@@ -106,6 +106,16 @@ export interface ConversationSnapshot {
   members: ConversationMember[];
   messages: MessageListItem[];
   currentMember: ConversationMember;
+  receipts: MessageReadReceipt[];
+}
+
+export interface EditMessageCommand {
+  messageId: string;
+  content: string;
+}
+
+export interface DeleteMessageCommand {
+  messageId: string;
 }
 
 export interface SendMessageCommand {

@@ -15,6 +15,7 @@ import type {
   MessageListItem,
 } from "@/features/chat/types";
 import { formatTypingUsers } from "@/features/chat/utils/format-typing-users";
+import { listSeenByReceipts } from "@/features/chat/utils/delivery-status";
 
 export function useConversationLifecycle(conversationId: string) {
   const { user } = useAuth();
@@ -169,7 +170,14 @@ export function useConversationLifecycle(conversationId: string) {
   const messages =
     snapshot && user
       ? snapshot.messages.map((message) =>
-          mapMessageToUi(message, user.id, snapshot.members),
+          mapMessageToUi(
+            message,
+            user.id,
+            snapshot.members,
+            snapshot.receipts,
+            snapshot.conversation.type,
+            snapshot.messages,
+          ),
         )
       : [];
   const typingNames =
@@ -183,6 +191,34 @@ export function useConversationLifecycle(conversationId: string) {
             return member?.displayName?.trim() || member?.email || "Another participant";
           })
       : [];
+
+  const editMessage = useCallback(
+    async (messageId: string, content: string) => {
+      return service.editMessage({ messageId, content });
+    },
+    [service],
+  );
+
+  const deleteMessage = useCallback(
+    async (messageId: string) => {
+      return service.deleteMessage({ messageId });
+    },
+    [service],
+  );
+
+  const getSeenBy = useCallback(
+    (messageId: string) => {
+      if (!snapshot || !user) return [];
+      return listSeenByReceipts(
+        messageId,
+        snapshot.members,
+        snapshot.receipts,
+        user.id,
+      );
+    },
+    [snapshot, user],
+  );
+
   return {
     state,
     conversation,
@@ -199,6 +235,9 @@ export function useConversationLifecycle(conversationId: string) {
     stopTyping,
     send,
     markRead,
+    editMessage,
+    deleteMessage,
+    getSeenBy,
     retry: () => service.openConversation(conversationId),
     retryMessage,
     loadOlder,

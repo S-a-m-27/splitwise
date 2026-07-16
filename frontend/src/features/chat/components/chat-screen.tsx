@@ -1,16 +1,18 @@
 "use client";
 
+import { useState } from "react";
 import { ChatHeader } from "@/features/chat/components/chat-header";
 import { ChatErrorState } from "@/features/chat/components/chat-error-state";
 import { EmptyChatState } from "@/features/chat/components/empty-chat-state";
 import { MessageComposer } from "@/features/chat/components/message-composer";
 import { MessageList } from "@/features/chat/components/message-list";
+import { MessageSeenBySheet } from "@/features/chat/components/message-seen-by-sheet";
 import {
   ChatScreenSkeleton,
   MessageListSkeleton,
 } from "@/features/chat/components/chat-skeleton";
 import { useConversationLifecycle } from "@/features/chat/hooks/use-conversation-lifecycle";
-import type { ChatConversationPreview } from "@/features/chat/types/ui";
+import type { ChatConversationPreview, MessageSeenByItem } from "@/features/chat/types/ui";
 import { cn } from "@/lib/utils";
 
 type ChatScreenProps = {
@@ -46,8 +48,13 @@ export function ChatScreen({
     typingLabel,
     notifyTyping,
     stopTyping,
+    editMessage,
+    deleteMessage,
+    getSeenBy,
   } = lifecycle;
   const resolvedConversation = lifecycle.conversation ?? conversation;
+  const [seenByOpen, setSeenByOpen] = useState(false);
+  const [seenByItems, setSeenByItems] = useState<MessageSeenByItem[]>([]);
 
   if (isLoading) {
     return embedded ? (
@@ -97,6 +104,12 @@ export function ChatScreen({
           messages={messages}
           conversationType={resolvedConversation.type}
           onRetryMessage={(messageId) => void retryMessage(messageId)}
+          onEditMessage={(messageId, content) => editMessage(messageId, content)}
+          onDeleteMessage={(messageId) => deleteMessage(messageId)}
+          onViewSeenBy={(messageId) => {
+            setSeenByItems(getSeenBy(messageId));
+            setSeenByOpen(true);
+          }}
           hasOlderMessages={hasOlderMessages}
           isLoadingOlder={isLoadingOlder}
           onLoadOlder={() => void loadOlder()}
@@ -119,6 +132,12 @@ export function ChatScreen({
         onTyping={notifyTyping}
         onTypingStop={stopTyping}
         disabled={lifecycle.connectionStatus === "disconnected"}
+      />
+
+      <MessageSeenBySheet
+        open={seenByOpen}
+        onOpenChange={setSeenByOpen}
+        items={seenByItems}
       />
     </div>
   );

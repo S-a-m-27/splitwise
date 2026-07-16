@@ -43,9 +43,19 @@ export interface ChatMessage {
   mentionedUserIds: string[];
   mentionLabels: string[];
   createdAt: string;
+  editedAt?: string | null;
+  deletedAt?: string | null;
   isOwn: boolean;
-  /** Placeholder — future read receipts */
+  isEditable?: boolean;
+  seenByCount?: number;
   status?: MessageDeliveryStatus;
+}
+
+export interface MessageSeenByItem {
+  userId: string;
+  displayName: string;
+  readAt: string;
+  avatarUrl?: string | null;
 }
 
 export interface DisplayChatMessage extends ChatMessage {

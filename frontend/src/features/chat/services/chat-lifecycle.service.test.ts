@@ -85,6 +85,11 @@ describe("ChatLifecycleService", () => {
         listMessagePage: vi.fn(async () => ({ items: [], nextCursor: null })),
         sendMessage: vi.fn(async () => realtimeMessage),
         markConversationRead: vi.fn(async () => undefined),
+        editMessage: vi.fn(async () => realtimeMessage),
+        deleteMessage: vi.fn(async () => realtimeMessage),
+      },
+      receipts: {
+        listReadReceipts: vi.fn(async () => []),
       },
       getCurrentUserId: vi.fn(async () => userId),
     };

@@ -1168,6 +1168,14 @@ export interface Database {
         Args: { p_conversation_id: string; p_message_id: string };
         Returns: undefined;
       };
+      edit_chat_message: {
+        Args: { p_message_id: string; p_content: string };
+        Returns: Database["public"]["Tables"]["messages"]["Row"];
+      };
+      delete_chat_message: {
+        Args: { p_message_id: string };
+        Returns: Database["public"]["Tables"]["messages"]["Row"];
+      };
     };
     Enums: {
       group_type: GroupType;

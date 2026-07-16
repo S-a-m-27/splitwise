@@ -71,6 +71,15 @@ export const markConversationReadSchema = z.object({
   messageId: messageIdSchema,
 });
 
+export const editMessageSchema = z.object({
+  messageId: messageIdSchema,
+  content: messageContentSchema,
+});
+
+export const deleteMessageSchema = z.object({
+  messageId: messageIdSchema,
+});
+
 export const chatRealtimeRowSchema = z.object({
   id: uuidSchema,
   conversation_id: conversationIdSchema,

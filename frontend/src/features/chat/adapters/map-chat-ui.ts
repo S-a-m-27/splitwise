@@ -2,13 +2,19 @@ import type {
   ConversationDetail,
   ConversationListItem,
   ConversationMember,
+  ConversationType,
   MessageListItem,
+  MessageReadReceipt,
 } from "@/features/chat/types";
 import type {
   ChatConversationPreview,
   ChatMessage,
   ChatParticipant,
 } from "@/features/chat/types/ui";
+import {
+  isMessageEditable,
+  resolveDeliveryStatus,
+} from "@/features/chat/utils/delivery-status";
 
 function initials(name: string): string {
   return name
@@ -98,6 +104,9 @@ export function mapMessageToUi(
   message: MessageListItem,
   currentUserId: string,
   members: ConversationMember[] = [],
+  receipts: MessageReadReceipt[] = [],
+  conversationType: ConversationType = "direct",
+  messages: MessageListItem[] = [],
 ): ChatMessage {
   const sender = members.find((member) => member.userId === message.senderId);
   const senderName =
@@ -112,6 +121,11 @@ export function mapMessageToUi(
   ).length;
   const mentionedUserIds = message.mentionedUserIds ?? [];
   const mentionedIdSet = new Set(mentionedUserIds);
+  const isOwn = message.senderId === currentUserId;
+  const seenByCount = receipts.filter(
+    (receipt) =>
+      receipt.messageId === message.id && receipt.userId !== currentUserId,
+  ).length;
   return {
     id: message.id,
     conversationId: message.conversationId,
@@ -123,17 +137,29 @@ export function mapMessageToUi(
         : undefined,
     senderInitials: initials(senderName),
     senderAvatarUrl: message.senderAvatarUrl ?? sender?.avatarUrl ?? undefined,
-    content: message.content ?? "",
+    content: message.deletedAt
+      ? "This message was deleted"
+      : (message.content ?? ""),
     mentionedUserIds,
     mentionLabels: members
       .filter((member) => mentionedIdSet.has(member.userId))
       .map((member) => member.displayName?.trim() || member.email || "")
       .filter(Boolean),
     createdAt: message.createdAt,
-    isOwn: message.senderId === currentUserId,
-    status:
-      message.senderId === currentUserId
-        ? (message.deliveryStatus ?? "sent")
-        : undefined,
+    editedAt: message.editedAt,
+    deletedAt: message.deletedAt,
+    isOwn,
+    isEditable: isOwn && isMessageEditable(message),
+    seenByCount: isOwn ? seenByCount : undefined,
+    status: isOwn
+      ? resolveDeliveryStatus(
+          message,
+          currentUserId,
+          members,
+          receipts,
+          conversationType,
+          messages,
+        )
+      : undefined,
   };
 }

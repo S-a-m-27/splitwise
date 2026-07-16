@@ -19,6 +19,9 @@ interface MessageListProps {
   conversationType: ConversationType;
   className?: string;
   onRetryMessage?: (messageId: string) => void;
+  onEditMessage?: (messageId: string, content: string) => Promise<unknown> | unknown;
+  onDeleteMessage?: (messageId: string) => Promise<unknown> | unknown;
+  onViewSeenBy?: (messageId: string) => void;
   hasOlderMessages?: boolean;
   isLoadingOlder?: boolean;
   onLoadOlder?: () => void;
@@ -30,6 +33,9 @@ export function MessageList({
   conversationType,
   className,
   onRetryMessage,
+  onEditMessage,
+  onDeleteMessage,
+  onViewSeenBy,
   hasOlderMessages = false,
   isLoadingOlder = false,
   onLoadOlder,
@@ -115,6 +121,9 @@ export function MessageList({
               message={item.message as DisplayChatMessage}
               showSenderInGroup={isGroup}
               onRetry={onRetryMessage}
+              onEdit={onEditMessage}
+              onDelete={onDeleteMessage}
+              onViewSeenBy={isGroup ? onViewSeenBy : undefined}
             />
           );
         })}

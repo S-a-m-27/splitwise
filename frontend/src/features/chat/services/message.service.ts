@@ -1,9 +1,13 @@
 import type {
+  DeleteMessageCommand,
+  EditMessageCommand,
   MarkConversationReadCommand,
   MessageListItem,
   SendMessageCommand,
 } from "@/features/chat/types";
 import {
+  deleteMessageSchema,
+  editMessageSchema,
   markConversationReadSchema,
   parseListMessagesInput,
   sendMessageSchema,
@@ -31,9 +35,6 @@ const MESSAGE_LIST_SELECT = `
   sender:profiles!messages_sender_id_fkey(full_name, avatar_url)
 `;
 
-/**
- * Phase 1: read-only message access. Send/update/delete arrive in Phase 2 via RPCs.
- */
 export class MessageService {
   async listMessagePage(
     input: Partial<{
@@ -52,7 +53,6 @@ export class MessageService {
       .from("messages")
       .select(MESSAGE_LIST_SELECT)
       .eq("conversation_id", conversationId)
-      .is("deleted_at", null)
       .order("created_at", { ascending: false })
       .order("id", { ascending: false })
       .limit(limit);
@@ -92,7 +92,6 @@ export class MessageService {
       .from("messages")
       .select(MESSAGE_LIST_SELECT)
       .eq("id", messageId)
-      .is("deleted_at", null)
       .maybeSingle();
 
     throwIfChatDataError(error);
@@ -113,6 +112,29 @@ export class MessageService {
       p_message_type: input.messageType,
       p_reply_to_message_id: null,
       p_mentioned_user_ids: input.mentionedUserIds,
+    });
+    throwIfChatDataError(error);
+    return mapMessageListItem(data as never);
+  }
+
+  async editMessage(command: EditMessageCommand): Promise<MessageListItem> {
+    const input = editMessageSchema.parse(command);
+    await requireChatUserId();
+    const supabase = createBrowserClient();
+    const { data, error } = await supabase.rpc("edit_chat_message", {
+      p_message_id: input.messageId,
+      p_content: input.content,
+    });
+    throwIfChatDataError(error);
+    return mapMessageListItem(data as never);
+  }
+
+  async deleteMessage(command: DeleteMessageCommand): Promise<MessageListItem> {
+    const input = deleteMessageSchema.parse(command);
+    await requireChatUserId();
+    const supabase = createBrowserClient();
+    const { data, error } = await supabase.rpc("delete_chat_message", {
+      p_message_id: input.messageId,
     });
     throwIfChatDataError(error);
     return mapMessageListItem(data as never);

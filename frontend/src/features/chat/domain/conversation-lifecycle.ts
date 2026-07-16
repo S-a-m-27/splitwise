@@ -69,8 +69,28 @@ export function applyChatDomainEvent(
     case "message.deleted":
       return {
         ...snapshot,
-        messages: snapshot.messages.filter((message) => message.id !== event.messageId),
+        messages: snapshot.messages.map((message) =>
+          message.id === event.messageId
+            ? {
+                ...message,
+                content: null,
+                deletedAt: message.deletedAt ?? new Date().toISOString(),
+              }
+            : message,
+        ),
       };
+    case "receipt.created": {
+      const alreadyTracked = snapshot.receipts.some(
+        (receipt) =>
+          receipt.messageId === event.receipt.messageId &&
+          receipt.userId === event.receipt.userId,
+      );
+      if (alreadyTracked) return snapshot;
+      return {
+        ...snapshot,
+        receipts: [...snapshot.receipts, event.receipt],
+      };
+    }
     case "conversation.updated":
       return event.conversation.id === snapshot.conversation.id
         ? {

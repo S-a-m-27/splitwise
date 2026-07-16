@@ -59,6 +59,7 @@ const snapshot: ConversationSnapshot = {
   members: [member],
   messages: [],
   currentMember: member,
+  receipts: [],
 };
 
 describe("conversation lifecycle", () => {
@@ -99,6 +100,31 @@ describe("conversation lifecycle", () => {
       member: { ...member, unreadCount: 3 },
     });
     expect(result.find((item) => item.id === conversation.id)?.unreadCount).toBe(3);
+  });
+
+  it("turns own messages to read when a peer receipt arrives", () => {
+    const ready = conversationLifecycleReducer(initialConversationLifecycleState, {
+      type: "HYDRATED",
+      snapshot: {
+        ...snapshot,
+        messages: [message("00000000-0000-4000-8000-000000000010")],
+      },
+    });
+    const withReceipt = conversationLifecycleReducer(ready, {
+      type: "EVENT",
+      event: {
+        type: "receipt.created",
+        conversationId: conversation.id,
+        receipt: {
+          id: "00000000-0000-4000-8000-000000000040",
+          conversationId: conversation.id,
+          userId: "00000000-0000-4000-8000-000000000099",
+          messageId: "00000000-0000-4000-8000-000000000010",
+          readAt: "2026-07-16T10:05:00Z",
+        },
+      },
+    });
+    expect(withReceipt.snapshot?.receipts).toHaveLength(1);
   });
 
   it("preserves enriched member identity during realtime membership updates", () => {
