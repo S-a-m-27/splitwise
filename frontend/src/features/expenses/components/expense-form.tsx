@@ -1,13 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import {
-  FileText,
-  Receipt,
-  Sparkles,
-  Users,
-  Wallet,
-} from "lucide-react";
+import { Sparkles } from "lucide-react";
 import { useAuth } from "@/features/auth/hooks/use-auth";
 import { useAddGuestByName, useGroup, useGroups } from "@/features/groups/hooks/use-groups";
 import { AddMemberByNameForm } from "@/features/groups/components/add-member-by-name-form";
@@ -16,7 +10,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AmountInput } from "@/features/expenses/components/amount-input";
-import { ExpenseFormSection } from "@/features/expenses/components/expense-form-section";
+import { ExpenseFormBlock } from "@/features/expenses/components/expense-form-block";
 import { ExpenseOptionPicker } from "@/features/expenses/components/expense-option-picker";
 import { GroupPicker } from "@/features/expenses/components/group-picker";
 import { ParticipantSelector } from "@/features/expenses/components/participant-selector";
@@ -36,6 +30,7 @@ interface ExpenseFormProps {
   submitLabel?: string;
   isSubmitting?: boolean;
   className?: string;
+  /** @deprecated Kept for callers; layout is always the compact essentials flow. */
   showHero?: boolean;
   presetGroupId?: string;
 }
@@ -79,7 +74,6 @@ export function ExpenseForm({
   submitLabel = "Save expense",
   isSubmitting = false,
   className,
-  showHero = true,
   presetGroupId,
 }: ExpenseFormProps) {
   const { user } = useAuth();
@@ -162,7 +156,6 @@ export function ExpenseForm({
       })),
     [participants],
   );
-
 
   function handleGroupChange(groupId: string) {
     setValues((current) => ({
@@ -289,79 +282,20 @@ export function ExpenseForm({
   const membersLoading = !!resolvedGroupId && groupLoading;
 
   return (
-    <form onSubmit={handleSubmit} className={cn("flex flex-col gap-5 min-[375px]:gap-6", className)}>
-      {showHero && (
-        <>
-          <section className="relative overflow-hidden rounded-2xl border border-primary/25 bg-gradient-to-br from-card via-card to-primary/5 p-4 shadow-md min-[375px]:rounded-3xl min-[375px]:p-5">
-            <div className="aurora pointer-events-none absolute inset-0 opacity-50" aria-hidden="true" />
-            <div
-              className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent"
-              aria-hidden="true"
-            />
-
-            <div className="relative flex flex-col gap-4">
-              <div className="flex items-end justify-between gap-3">
-                <div>
-                  <p className="text-[11px] font-bold tracking-[0.14em] text-primary uppercase min-[375px]:text-xs">
-                    Total amount
-                  </p>
-                  <p className="mt-1 text-xs text-muted-foreground min-[375px]:text-[13px]">
-                    Tap to enter what was spent
-                  </p>
-                </div>
-                <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-semibold text-primary">
-                  Live split
-                </span>
-              </div>
-
-              <AmountInput
-                value={values.amount}
-                onChange={handleAmountChange}
-                variant="hero"
-                aria-invalid={!!amountError}
-              />
-
-              {amountError && (
-                <p role="alert" className="text-sm text-destructive">
-                  {amountError}
-                </p>
-              )}
-            </div>
-          </section>
-
-          <SplitLivePreview
-            amount={values.amount}
-            participants={participants}
-            participantIds={resolvedParticipantIds}
-            paidById={resolvedPaidById}
-            splitType={values.splitType}
-            splitValues={resolvedSplitValues}
-            onSplitTypeChange={handleSplitTypeChange}
-            onSplitValueChange={(participantId, value) =>
-              setValues((current) => ({
-                ...current,
-                splitValues: { ...current.splitValues, [participantId]: value },
-              }))
-            }
-          />
-        </>
-      )}
-
-      <ExpenseFormSection
-        title="Group & details"
-        description="Where does this expense belong?"
-        icon={<Receipt className="size-5" />}
+    <form
+      onSubmit={handleSubmit}
+      className={cn("relative flex flex-col gap-5 min-[375px]:gap-6", className)}
+    >
+      {/* Essentials: title, amount, group — one compact surface */}
+      <section
+        className={cn(
+          "rounded-2xl border border-border/70 bg-card/90 p-3.5 shadow-sm backdrop-blur-sm",
+          "min-[375px]:rounded-[1.35rem] min-[375px]:p-4",
+        )}
       >
-        <div className="flex flex-col gap-5">
-          <GroupPicker
-            groups={groupOptions}
-            value={resolvedGroupId}
-            onChange={handleGroupChange}
-            isLoading={groupsLoading}
-          />
-
-          <div className="flex flex-col gap-2">
-            <label htmlFor="expense-title" className="text-sm font-medium text-foreground">
+        <div className="flex flex-col gap-3.5">
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="expense-title" className="sr-only">
               Expense title
             </label>
             <Input
@@ -371,9 +305,9 @@ export function ExpenseForm({
                 setValues((current) => ({ ...current, title: event.target.value }));
                 if (titleError) setTitleError(null);
               }}
-              placeholder="e.g. Dinner at Monal"
+              placeholder="What was this for? e.g. Dinner"
               aria-invalid={!!titleError}
-              className="h-11 border-primary/15 bg-background/50"
+              className="h-11 border-border/60 bg-background/60 text-base font-medium placeholder:font-normal"
               autoComplete="off"
             />
             {titleError && (
@@ -383,115 +317,115 @@ export function ExpenseForm({
             )}
           </div>
 
-          {!showHero && (
-            <div className="flex flex-col gap-5">
-              <div className="flex flex-col gap-2">
-                <label htmlFor="expense-amount-inline" className="text-sm font-medium text-foreground">
-                  Amount
-                </label>
-                <AmountInput
-                  id="expense-amount-inline"
-                  value={values.amount}
-                  onChange={handleAmountChange}
-                  aria-invalid={!!amountError}
-                />
-                {amountError && (
-                  <p role="alert" className="text-sm text-destructive">
-                    {amountError}
-                  </p>
-                )}
-              </div>
-              <SplitLivePreview
-                amount={values.amount}
-                participants={participants}
-                participantIds={resolvedParticipantIds}
-                paidById={resolvedPaidById}
-                splitType={values.splitType}
-                splitValues={resolvedSplitValues}
-                onSplitTypeChange={handleSplitTypeChange}
-                onSplitValueChange={(participantId, value) =>
-                  setValues((current) => ({
-                    ...current,
-                    splitValues: { ...current.splitValues, [participantId]: value },
-                  }))
-                }
-              />
-            </div>
-          )}
-        </div>
-      </ExpenseFormSection>
-
-      <ExpenseFormSection
-        title="Who paid?"
-        description="Select the person who covered the bill."
-        icon={<Wallet className="size-5" />}
-        variant="glow"
-      >
-        {membersLoading ? (
-          <div className="h-12 animate-pulse rounded-xl bg-muted" />
-        ) : paidByOptions.length > 0 ? (
-          <ExpenseOptionPicker
-            id="expense-paid-by"
-            label="Paid by"
-            hideLabel
-            value={resolvedPaidById}
-            options={paidByOptions}
-            onChange={(paidById) => setValues((current) => ({ ...current, paidById }))}
-            sheetTitle="Who paid?"
-            sheetDescription="Choose who covered this expense upfront."
-          />
-        ) : (
-          <p className="text-sm text-muted-foreground">Select a group with members first.</p>
-        )}
-      </ExpenseFormSection>
-
-      <ExpenseFormSection
-        title="Who's splitting?"
-        description="Choose who shares this expense — saved as an equal split."
-        icon={<Users className="size-5" />}
-      >
-        {membersLoading ? (
-          <div className="space-y-2">
-            {Array.from({ length: 3 }).map((_, index) => (
-              <div key={index} className="h-12 animate-pulse rounded-xl bg-muted" />
-            ))}
-          </div>
-        ) : participants.length > 0 ? (
-          <div className="flex flex-col gap-5">
-            <ParticipantSelector
-              participants={participants}
-              selectedIds={resolvedParticipantIds}
-              onChange={handleParticipantChange}
+          <div className="flex flex-col gap-1.5">
+            <AmountInput
+              value={values.amount}
+              onChange={handleAmountChange}
+              variant="hero"
+              aria-invalid={!!amountError}
             />
-            {resolvedGroupId && (
-              <AddMemberByNameForm
-                compact
-                onSubmit={handleAddGuest}
-                isSubmitting={addGuest.isPending}
-              />
+            {amountError && (
+              <p role="alert" className="text-sm text-destructive">
+                {amountError}
+              </p>
             )}
           </div>
-        ) : resolvedGroupId ? (
-          <div className="flex flex-col gap-3">
-            <p className="text-sm text-muted-foreground">
-              Add someone by name to start splitting with them.
-            </p>
-            <AddMemberByNameForm
-              compact
-              onSubmit={handleAddGuest}
-              isSubmitting={addGuest.isPending}
-            />
-          </div>
-        ) : (
-          <p className="text-sm text-muted-foreground">Select a group to load members.</p>
-        )}
-      </ExpenseFormSection>
 
-      <ExpenseFormSection
-        title="Notes"
-        description="Optional — receipts, tips, or context."
-        icon={<FileText className="size-5" />}
-      >
+          <GroupPicker
+            groups={groupOptions}
+            value={resolvedGroupId}
+            onChange={handleGroupChange}
+            isLoading={groupsLoading}
+          />
+        </div>
+      </section>
+
+      <SplitLivePreview
+        amount={values.amount}
+        participants={participants}
+        participantIds={resolvedParticipantIds}
+        paidById={resolvedPaidById}
+        splitType={values.splitType}
+        splitValues={resolvedSplitValues}
+        onSplitTypeChange={handleSplitTypeChange}
+        onSplitValueChange={(participantId, value) =>
+          setValues((current) => ({
+            ...current,
+            splitValues: { ...current.splitValues, [participantId]: value },
+          }))
+        }
+      />
+
+      <ExpenseFormBlock title="People" description="Who paid and who shares this expense.">
+        <div className="flex flex-col gap-4 rounded-2xl border border-border/60 bg-card/60 p-3.5 min-[375px]:p-4">
+          <div className="flex flex-col gap-2">
+            <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+              Paid by
+            </p>
+            {membersLoading ? (
+              <div className="h-12 animate-pulse rounded-xl bg-muted" />
+            ) : paidByOptions.length > 0 ? (
+              <ExpenseOptionPicker
+                id="expense-paid-by"
+                label="Paid by"
+                hideLabel
+                value={resolvedPaidById}
+                options={paidByOptions}
+                onChange={(paidById) => setValues((current) => ({ ...current, paidById }))}
+                sheetTitle="Who paid?"
+                sheetDescription="Choose who covered this expense upfront."
+              />
+            ) : (
+              <p className="text-sm text-muted-foreground">Select a group with members first.</p>
+            )}
+          </div>
+
+          <div className="h-px bg-border/70" aria-hidden="true" />
+
+          <div className="flex flex-col gap-2">
+            <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+              Splitting with
+            </p>
+            {membersLoading ? (
+              <div className="space-y-2">
+                {Array.from({ length: 3 }).map((_, index) => (
+                  <div key={index} className="h-12 animate-pulse rounded-xl bg-muted" />
+                ))}
+              </div>
+            ) : participants.length > 0 ? (
+              <div className="flex flex-col gap-4">
+                <ParticipantSelector
+                  participants={participants}
+                  selectedIds={resolvedParticipantIds}
+                  onChange={handleParticipantChange}
+                />
+                {resolvedGroupId && (
+                  <AddMemberByNameForm
+                    compact
+                    onSubmit={handleAddGuest}
+                    isSubmitting={addGuest.isPending}
+                  />
+                )}
+              </div>
+            ) : resolvedGroupId ? (
+              <div className="flex flex-col gap-3">
+                <p className="text-sm text-muted-foreground">
+                  Add someone by name to start splitting with them.
+                </p>
+                <AddMemberByNameForm
+                  compact
+                  onSubmit={handleAddGuest}
+                  isSubmitting={addGuest.isPending}
+                />
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">Select a group to load members.</p>
+            )}
+          </div>
+        </div>
+      </ExpenseFormBlock>
+
+      <ExpenseFormBlock title="Notes" description="Optional — receipts, tips, or context.">
         <textarea
           id="expense-notes"
           value={values.notes}
@@ -499,13 +433,13 @@ export function ExpenseForm({
             setValues((current) => ({ ...current, notes: event.target.value }))
           }
           placeholder="Add details about this expense…"
-          rows={3}
+          rows={2}
           className={cn(
-            "w-full resize-none rounded-xl border border-primary/15 bg-background/50 px-3 py-2.5 text-sm",
+            "w-full resize-none rounded-xl border border-border/60 bg-background/50 px-3 py-2.5 text-sm",
             "placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
           )}
         />
-      </ExpenseFormSection>
+      </ExpenseFormBlock>
 
       <div className="sticky bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-30 -mx-1 bg-gradient-to-t from-background via-background/95 to-transparent px-1 pt-3 pb-1 xl:static xl:mx-0 xl:bg-none xl:p-0">
         <Button

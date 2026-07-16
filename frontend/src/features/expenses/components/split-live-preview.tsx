@@ -148,67 +148,60 @@ export function SplitLivePreview({
   return (
     <article
       className={cn(
-        "relative overflow-hidden rounded-2xl border border-primary/30 p-4 shadow-lg min-[375px]:rounded-3xl min-[375px]:p-5",
-        "bg-gradient-to-br from-primary/15 via-card to-violet-500/12",
-        hasValidAmount && "animate-pulse-glow",
+        "rounded-2xl border border-border/70 bg-card/80 p-3.5 shadow-sm",
+        "min-[375px]:rounded-[1.35rem] min-[375px]:p-4",
         className,
       )}
     >
-      <div
-        className="pointer-events-none absolute -top-8 -right-8 size-32 rounded-full bg-primary/20 blur-3xl"
-        aria-hidden="true"
-      />
-      <div
-        className="pointer-events-none absolute -bottom-10 -left-6 size-28 rounded-full bg-violet-500/15 blur-3xl"
-        aria-hidden="true"
-      />
-
-      <div className="relative">
+      <div className="flex items-center justify-between gap-2">
         <p className={cn("flex items-center gap-1.5", META_LABEL_CLASS)}>
           <Wand2 className="size-3.5 text-primary" aria-hidden="true" />
-          Live split preview
+          Live split
         </p>
-
-        {hasValidAmount ? (
-          <p className="mt-1 font-heading text-2xl font-bold tabular-nums text-foreground min-[375px]:text-3xl">
-            {formatMoney(parsedAmount)}
-          </p>
-        ) : (
-          <div className="mt-1">
-            <p
-              className="font-heading text-2xl font-bold tabular-nums text-foreground/25 min-[375px]:text-3xl"
-              aria-hidden="true"
-            >
-              {symbol} —
+        <div className="flex items-center gap-3 text-right">
+          <div>
+            <p className="text-[10px] font-semibold tracking-wide text-muted-foreground uppercase">
+              {splitType === "shares" ? "Per share" : "Per person"}
             </p>
-            <p className={cn("mt-1.5", META_TEXT_CLASS)}>
-              Updates automatically when you enter the total amount above.
+            <p className="text-sm font-bold tabular-nums text-primary">
+              {preview?.lines[0] ? formatMoney(preview.lines[0].displayAmount) : "—"}
             </p>
           </div>
-        )}
+          <div>
+            <p className="text-[10px] font-semibold tracking-wide text-muted-foreground uppercase">
+              People
+            </p>
+            <p className="text-sm font-bold tabular-nums text-foreground">{count || "—"}</p>
+          </div>
+        </div>
       </div>
 
+      {!hasValidAmount && (
+        <p className={cn("mt-2", META_TEXT_CLASS)}>
+          Enter an amount above to see how it splits.
+        </p>
+      )}
+
       {selectedParticipants.length > 0 && (
-        <div className="relative mt-4 flex items-center gap-2.5 min-[375px]:mt-5">
-          <p className={cn("shrink-0", META_LABEL_CLASS)}>Splitting with</p>
-          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+        <div className="mt-3 flex items-center gap-2">
+          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
             {visibleAvatars.map((participant) => (
               <span
                 key={participant.id}
-                className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-background/50 py-0.5 pr-2 pl-0.5"
+                className="inline-flex items-center gap-1 rounded-full border border-border/50 bg-muted/40 py-0.5 pr-2 pl-0.5"
               >
-                <Avatar size="sm" className="size-6">
-                  <AvatarFallback className="bg-primary/15 text-[9px] font-bold text-primary">
+                <Avatar size="sm" className="size-5">
+                  <AvatarFallback className="bg-primary/15 text-[8px] font-bold text-primary">
                     {participant.initials}
                   </AvatarFallback>
                 </Avatar>
-                <span className="max-w-[4.5rem] truncate text-xs font-medium text-foreground">
+                <span className="max-w-[4rem] truncate text-[11px] font-medium text-foreground">
                   {participant.isCurrentUser ? "You" : participant.name.split(" ")[0]}
                 </span>
               </span>
             ))}
             {hiddenCount > 0 && (
-              <span className="inline-flex h-6 items-center rounded-full bg-muted px-2 text-xs font-bold text-foreground">
+              <span className="inline-flex h-5 items-center rounded-full bg-muted px-1.5 text-[11px] font-bold text-foreground">
                 +{hiddenCount}
               </span>
             )}
@@ -217,17 +210,15 @@ export function SplitLivePreview({
       )}
 
       {hasValidAmount && count > 0 && (
-        <div className="relative mt-5">
+        <div className="mt-3">
           <SplitTypeSelector value={splitType} onChange={onSplitTypeChange} />
         </div>
       )}
 
       {hasValidAmount && preview && preview.lines.length > 0 && (
-        <div className="relative mt-5 space-y-3">
-          <p className={META_LABEL_CLASS}>
-            {getSplitTypeLabel(splitType)} breakdown
-          </p>
-          <ul className="flex max-h-52 flex-col gap-2 overflow-y-auto pr-0.5">
+        <div className="mt-3 space-y-2">
+          <p className={META_LABEL_CLASS}>{getSplitTypeLabel(splitType)} breakdown</p>
+          <ul className="flex max-h-44 flex-col gap-1.5 overflow-y-auto pr-0.5">
             {preview.lines.map((line) => {
               const participant = participants.find((p) => p.id === line.participantId);
               if (!participant) return null;
@@ -235,9 +226,9 @@ export function SplitLivePreview({
               return (
                 <li
                   key={line.participantId}
-                  className="flex min-h-11 items-center gap-2 rounded-xl border border-border/50 bg-background/40 px-2.5 py-2 backdrop-blur-sm"
+                  className="flex min-h-10 items-center gap-2 rounded-xl border border-border/50 bg-background/50 px-2.5 py-1.5"
                 >
-                  <Avatar size="sm" className="size-8 shrink-0">
+                  <Avatar size="sm" className="size-7 shrink-0">
                     <AvatarFallback className="bg-primary/15 text-[10px] font-bold text-primary">
                       {participant.initials}
                     </AvatarFallback>
@@ -263,30 +254,11 @@ export function SplitLivePreview({
         </div>
       )}
 
-      <div className="relative mt-5 grid grid-cols-2 gap-3 min-[375px]:gap-4">
-        <div className="rounded-xl border border-border/60 bg-background/40 px-3.5 py-3 backdrop-blur-sm min-[375px]:px-4 min-[375px]:py-3.5">
-          <p className={META_LABEL_CLASS}>
-            {splitType === "shares" ? "Per share" : "Per person"}
-          </p>
-          <p className="mt-1.5 text-lg font-bold tabular-nums text-primary min-[375px]:text-xl">
-            {preview?.lines[0]
-              ? formatMoney(preview.lines[0].displayAmount)
-              : "—"}
-          </p>
-        </div>
-        <div className="rounded-xl border border-border/60 bg-background/40 px-3.5 py-3 backdrop-blur-sm min-[375px]:px-4 min-[375px]:py-3.5">
-          <p className={META_LABEL_CLASS}>Split among</p>
-          <p className="mt-1.5 text-lg font-bold text-foreground min-[375px]:text-xl">
-            {count} {count === 1 ? "person" : "people"}
-          </p>
-        </div>
-      </div>
-
       {hasValidAmount && preview && (
         <p
           className={cn(
-            "relative mt-4 flex items-start gap-2 rounded-xl px-3.5 py-2.5 min-[375px]:mt-5 min-[375px]:px-4 min-[375px]:py-3",
-            preview.isValid ? "bg-primary/10" : "bg-amber-500/10",
+            "mt-3 flex items-start gap-2 rounded-xl px-3 py-2",
+            preview.isValid ? "bg-primary/8" : "bg-amber-500/10",
             META_TEXT_CLASS,
           )}
         >

@@ -15,8 +15,6 @@ import { useExpense, useUpdateExpense } from "@/features/expenses/hooks/use-expe
 import { getExpensesErrorMessage } from "@/features/expenses/services/expenses.errors";
 import { expenseToFormValues } from "@/features/expenses/utils/map-expense";
 import type { ExpenseFormValues } from "@/features/expenses/types";
-import { META_TEXT_CLASS } from "@/lib/typography";
-import { cn } from "@/lib/utils";
 
 interface EditExpensePageContentProps {
   expenseId: string;
@@ -88,25 +86,25 @@ export function EditExpensePageContent({ expenseId }: EditExpensePageContentProp
 
   return (
     <DashboardShell>
-      <PageStack>
+      <PageStack className="relative gap-4 min-[375px]:gap-5">
+        <div
+          className="aurora pointer-events-none absolute -top-4 right-0 left-0 h-24 opacity-30"
+          aria-hidden="true"
+        />
+
         <ExpensesBackHeader
           title="Edit expense"
           backHref={expenseDetailRoute(expenseId)}
           backLabel="Back to expense details"
+          className="relative"
         />
 
-        <div className="rounded-xl border border-border/80 bg-card p-5 shadow-sm min-[375px]:rounded-2xl min-[375px]:p-6 md:p-7">
-          <p className={cn("mb-6 leading-relaxed", META_TEXT_CLASS)}>
-            Update the details for this shared expense.
-          </p>
-          <ExpenseForm
-            initialValues={expenseToFormValues(expense)}
-            onSubmit={handleSubmit}
-            submitLabel="Save changes"
-            isSubmitting={updateExpense.isPending}
-            showHero={false}
-          />
-        </div>
+        <ExpenseForm
+          initialValues={expenseToFormValues(expense)}
+          onSubmit={handleSubmit}
+          submitLabel="Save changes"
+          isSubmitting={updateExpense.isPending}
+        />
       </PageStack>
     </DashboardShell>
   );

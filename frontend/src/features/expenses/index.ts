@@ -16,6 +16,7 @@ export { ExpenseOptionPicker } from "@/features/expenses/components/expense-opti
 export { GroupPicker } from "@/features/expenses/components/group-picker";
 export { SplitLivePreview } from "@/features/expenses/components/split-live-preview";
 export { ExpenseFormSection } from "@/features/expenses/components/expense-form-section";
+export { ExpenseFormBlock } from "@/features/expenses/components/expense-form-block";
 export { SplitTypeSelector } from "@/features/expenses/components/split-type-selector";
 
 export { expensesService } from "@/features/expenses/services/expenses.service";

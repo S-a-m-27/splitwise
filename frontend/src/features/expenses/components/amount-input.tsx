@@ -37,15 +37,15 @@ export function AmountInput({
 
         <div
           className={cn(
-            "relative flex min-h-[5.5rem] items-center gap-3 rounded-2xl border border-primary/25 bg-background/80 px-4 py-4 shadow-inner backdrop-blur-sm transition-all duration-200",
-            "group-focus-within:border-primary/45 group-focus-within:bg-background group-focus-within:shadow-lg group-focus-within:shadow-primary/10",
-            "min-[375px]:min-h-[6rem] min-[375px]:gap-4 min-[375px]:rounded-[1.35rem] min-[375px]:px-5",
+            "relative flex min-h-[4.25rem] items-center gap-3 rounded-2xl border border-primary/20 bg-background/80 px-3.5 py-3 shadow-inner backdrop-blur-sm transition-all duration-200",
+            "group-focus-within:border-primary/40 group-focus-within:bg-background group-focus-within:shadow-md group-focus-within:shadow-primary/10",
+            "min-[375px]:min-h-[4.75rem] min-[375px]:gap-3.5 min-[375px]:px-4",
           )}
         >
           <span
             className={cn(
               "flex shrink-0 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 font-bold text-primary",
-              "min-w-[3.25rem] px-2.5 py-2 text-lg min-[375px]:min-w-[3.5rem] min-[375px]:text-xl",
+              "min-w-[2.75rem] px-2 py-1.5 text-base min-[375px]:min-w-[3rem] min-[375px]:text-lg",
             )}
             aria-hidden="true"
           >
@@ -64,9 +64,9 @@ export function AmountInput({
             placeholder={placeholder}
             aria-invalid={ariaInvalid}
             className={cn(
-              "h-auto min-h-[3rem] flex-1 border-0 bg-transparent p-0 shadow-none focus-visible:ring-0",
+              "h-auto min-h-[2.5rem] flex-1 border-0 bg-transparent p-0 shadow-none focus-visible:ring-0",
               "font-bold tabular-nums tracking-tight text-foreground placeholder:text-foreground/25",
-              "text-right text-4xl min-[375px]:min-h-[3.5rem] min-[375px]:text-5xl",
+              "text-right text-3xl min-[375px]:min-h-[2.75rem] min-[375px]:text-4xl",
               hasValue && "text-gradient-primary",
             )}
             autoComplete="off"
