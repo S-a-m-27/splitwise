@@ -49,7 +49,7 @@ export function useConversationLifecycle(conversationId: string) {
   }, [conversationId, queryClient, service]);
 
   const send = useCallback(
-    async (content: string) => {
+    async (content: string, mentionedUserIds: string[] = []) => {
       if (!userId) throw new Error("You must be signed in to send messages.");
       const now = new Date().toISOString();
       const clientMessageId = crypto.randomUUID();
@@ -66,6 +66,7 @@ export function useConversationLifecycle(conversationId: string) {
         updatedAt: now,
         editedAt: null,
         deletedAt: null,
+        mentionedUserIds,
         deliveryStatus: "sending",
       };
       service.stageOptimisticMessage(optimistic);
@@ -75,6 +76,7 @@ export function useConversationLifecycle(conversationId: string) {
           content,
           clientMessageId,
           messageType: "text",
+          mentionedUserIds,
         });
       } catch (error) {
         service.stageOptimisticMessage({ ...optimistic, deliveryStatus: "failed" });
@@ -111,6 +113,7 @@ export function useConversationLifecycle(conversationId: string) {
           content: message.content,
           clientMessageId: message.clientMessageId,
           messageType: message.messageType,
+          mentionedUserIds: message.mentionedUserIds,
         });
       } catch (error) {
         service.stageOptimisticMessage({ ...message, deliveryStatus: "failed" });
@@ -185,6 +188,7 @@ export function useConversationLifecycle(conversationId: string) {
     conversation,
     messages,
     members: snapshot?.members ?? [],
+    currentUserId: userId,
     isLoading: state.status === "idle" || state.status === "opening" || state.status === "hydrating",
     isError: state.status === "error",
     error: state.error,

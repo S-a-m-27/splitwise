@@ -27,6 +27,7 @@ const MESSAGE_LIST_SELECT = `
   updated_at,
   edited_at,
   deleted_at,
+  metadata,
   sender:profiles!messages_sender_id_fkey(full_name, avatar_url)
 `;
 
@@ -111,6 +112,7 @@ export class MessageService {
       p_client_message_id: input.clientMessageId,
       p_message_type: input.messageType,
       p_reply_to_message_id: null,
+      p_mentioned_user_ids: input.mentionedUserIds,
     });
     throwIfChatDataError(error);
     return mapMessageListItem(data as never);

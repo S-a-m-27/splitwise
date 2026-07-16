@@ -12,6 +12,8 @@ interface ConversationSearchProps {
   onChange: (value: string) => void;
   onSelect?: (result: ConversationSearchResult) => void;
   className?: string;
+  placeholder?: string;
+  directOnly?: boolean;
 }
 
 export function ConversationSearch({
@@ -19,9 +21,18 @@ export function ConversationSearch({
   onChange,
   onSelect,
   className,
+  placeholder = "Search conversations, people, groups…",
+  directOnly = false,
 }: ConversationSearchProps) {
   const { results, recentSearches, isLoading, isEmpty, hasQuery } =
     useConversationSearch(value);
+  const visibleResults = directOnly
+    ? results.filter(
+        (result) =>
+          result.type === "user" || result.conversationType === "direct",
+      )
+    : results;
+  const noVisibleResults = hasQuery && !isLoading && visibleResults.length === 0;
 
   return (
     <div className={cn("flex flex-col gap-3", className)}>
@@ -34,7 +45,7 @@ export function ConversationSearch({
           type="search"
           value={value}
           onChange={(event) => onChange(event.target.value)}
-          placeholder="Search conversations, people, groups…"
+          placeholder={placeholder}
           aria-label="Search conversations"
           className={cn(
             "h-11 w-full rounded-xl border border-border/80 bg-card pl-10 pr-10 text-sm shadow-sm",
@@ -82,15 +93,15 @@ export function ConversationSearch({
         </p>
       )}
 
-      {hasQuery && !isLoading && isEmpty && (
+      {hasQuery && !isLoading && (isEmpty || noVisibleResults) && (
         <p className={cn("py-6 text-center text-sm", META_TEXT_CLASS)} role="status">
           No results for &ldquo;{value}&rdquo;
         </p>
       )}
 
-      {hasQuery && !isLoading && results.length > 0 && (
+      {hasQuery && !isLoading && visibleResults.length > 0 && (
         <ul className="flex flex-col gap-2" role="listbox" aria-label="Search results">
-          {results.map((result) => (
+          {visibleResults.map((result) => (
             <li key={result.id}>
               <button
                 type="button"

@@ -1,10 +1,24 @@
 import type {
   ChatConnectionStatus,
+  ConversationMember,
   ConversationLifecycleStatus,
   ConversationSnapshot,
 } from "@/features/chat/types";
 import type { ChatDomainEvent } from "@/features/chat/events/chat-events";
 import { reconcileMessage } from "@/features/chat/cache/reconcile-chat-cache";
+
+function mergeConversationMember(
+  existing: ConversationMember | undefined,
+  incoming: ConversationMember,
+): ConversationMember {
+  if (!existing) return incoming;
+  return {
+    ...incoming,
+    displayName: incoming.displayName?.trim() || existing.displayName,
+    avatarUrl: incoming.avatarUrl ?? existing.avatarUrl,
+    email: incoming.email ?? existing.email,
+  };
+}
 
 export interface ConversationLifecycleState {
   status: ConversationLifecycleStatus;
@@ -72,16 +86,22 @@ export function applyChatDomainEvent(
           }
         : snapshot;
     case "membership.updated": {
+      const existing = snapshot.members.find(
+        (member) => member.userId === event.member.userId,
+      );
+      const mergedMember = mergeConversationMember(existing, event.member);
       const isCurrentMember =
-        snapshot.currentMember.userId === event.member.userId;
+        snapshot.currentMember.userId === mergedMember.userId;
       return {
         ...snapshot,
-        members: snapshot.members.map((member) =>
-          member.userId === event.member.userId ? event.member : member,
-        ),
-        currentMember: isCurrentMember ? event.member : snapshot.currentMember,
+        members: existing
+          ? snapshot.members.map((member) =>
+              member.userId === mergedMember.userId ? mergedMember : member,
+            )
+          : [...snapshot.members, mergedMember],
+        currentMember: isCurrentMember ? mergedMember : snapshot.currentMember,
         conversation: isCurrentMember
-          ? { ...snapshot.conversation, unreadCount: event.member.unreadCount }
+          ? { ...snapshot.conversation, unreadCount: mergedMember.unreadCount }
           : snapshot.conversation,
       };
     }

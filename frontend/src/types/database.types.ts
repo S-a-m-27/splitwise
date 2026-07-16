@@ -1160,6 +1160,7 @@ export interface Database {
           p_client_message_id: string;
           p_message_type?: MessageType;
           p_reply_to_message_id?: string | null;
+          p_mentioned_user_ids?: string[];
         };
         Returns: Database["public"]["Tables"]["messages"]["Row"];
       };

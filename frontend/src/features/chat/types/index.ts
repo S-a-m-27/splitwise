@@ -59,6 +59,7 @@ export interface MessageListItem {
   deletedAt: string | null;
   senderName?: string;
   senderAvatarUrl?: string | null;
+  mentionedUserIds?: string[];
   deliveryStatus?: "sending" | "sent" | "failed";
 }
 
@@ -112,6 +113,7 @@ export interface SendMessageCommand {
   content: string;
   clientMessageId: string;
   messageType?: MessageType;
+  mentionedUserIds?: string[];
 }
 
 export interface MarkConversationReadCommand {

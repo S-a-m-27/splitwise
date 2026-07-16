@@ -101,6 +101,38 @@ describe("conversation lifecycle", () => {
     expect(result.find((item) => item.id === conversation.id)?.unreadCount).toBe(3);
   });
 
+  it("preserves enriched member identity during realtime membership updates", () => {
+    const enrichedMember = {
+      ...member,
+      displayName: "Khanwaiz",
+      email: "khanwaiz@example.com",
+      avatarUrl: "https://example.com/avatar.png",
+    };
+    const ready = conversationLifecycleReducer(initialConversationLifecycleState, {
+      type: "HYDRATED",
+      snapshot: {
+        ...snapshot,
+        members: [enrichedMember],
+        currentMember: enrichedMember,
+      },
+    });
+    const updated = conversationLifecycleReducer(ready, {
+      type: "EVENT",
+      event: {
+        type: "membership.updated",
+        conversationId: conversation.id,
+        member: { ...member, unreadCount: 2 },
+      },
+    });
+
+    expect(updated.snapshot?.members[0]).toMatchObject({
+      displayName: "Khanwaiz",
+      email: "khanwaiz@example.com",
+      avatarUrl: "https://example.com/avatar.png",
+      unreadCount: 2,
+    });
+  });
+
   it("clears ephemeral activity while reconnecting and restores it from events", () => {
     const ready = conversationLifecycleReducer(
       conversationLifecycleReducer(initialConversationLifecycleState, {

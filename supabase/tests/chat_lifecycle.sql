@@ -1,11 +1,11 @@
 BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgtap WITH SCHEMA extensions;
-SELECT plan(17);
+SELECT plan(21);
 
 SELECT has_function(
   'public',
   'send_chat_message',
-  ARRAY['uuid', 'text', 'uuid', 'public.message_type', 'uuid'],
+  ARRAY['uuid', 'text', 'uuid', 'public.message_type', 'uuid', 'uuid[]'],
   'transactional send RPC exists'
 );
 SELECT has_function(
@@ -24,7 +24,7 @@ SELECT has_index(
 SELECT ok(
   position(
     'is_group_member' IN pg_get_functiondef(
-      'public.send_chat_message(uuid,text,uuid,public.message_type,uuid)'::regprocedure
+      'public.send_chat_message(uuid,text,uuid,public.message_type,uuid,uuid[])'::regprocedure
     )
   ) > 0,
   'group sends enforce authoritative group membership'
@@ -183,6 +183,86 @@ SELECT is(
      AND read_at IS NULL),
   0,
   'muted conversation creates no unread notification'
+);
+
+INSERT INTO public.groups (
+  id, name, icon, type, invite_code, created_by
+) VALUES (
+  '40000000-0000-4000-8000-000000000001',
+  'Mention Group',
+  '💬',
+  'friends',
+  'MENTION001',
+  '10000000-0000-4000-8000-000000000001'
+);
+INSERT INTO public.group_members (group_id, user_id, role)
+VALUES
+  (
+    '40000000-0000-4000-8000-000000000001',
+    '10000000-0000-4000-8000-000000000001',
+    'owner'
+  ),
+  (
+    '40000000-0000-4000-8000-000000000001',
+    '10000000-0000-4000-8000-000000000002',
+    'member'
+  );
+
+SELECT lives_ok(
+  $$ SELECT public.send_chat_message(
+    (
+      SELECT id FROM public.conversations
+      WHERE group_id = '40000000-0000-4000-8000-000000000001'
+    ),
+    'Hello @Chat B',
+    '30000000-0000-4000-8000-000000000004',
+    'text',
+    NULL,
+    ARRAY['10000000-0000-4000-8000-000000000002']::UUID[]
+  ) $$,
+  'group member can mention another active member'
+);
+
+SELECT ok(
+  (
+    SELECT metadata->'mentioned_user_ids'
+      @> '["10000000-0000-4000-8000-000000000002"]'::JSONB
+    FROM public.messages
+    WHERE client_message_id = '30000000-0000-4000-8000-000000000004'
+  ),
+  'mentioned user ids are persisted in message metadata'
+);
+
+SELECT is(
+  (
+    SELECT title
+    FROM public.notifications
+    WHERE user_id = '10000000-0000-4000-8000-000000000002'
+      AND conversation_id = (
+        SELECT id FROM public.conversations
+        WHERE group_id = '40000000-0000-4000-8000-000000000001'
+      )
+      AND read_at IS NULL
+  ),
+  'Chat A mentioned you',
+  'mentioned member receives mention-specific notification copy'
+);
+
+SELECT throws_ok(
+  $$ SELECT public.send_chat_message(
+    (
+      SELECT id FROM public.conversations
+      WHERE group_id = '40000000-0000-4000-8000-000000000001'
+    ),
+    'Invalid mention',
+    '30000000-0000-4000-8000-000000000005',
+    'text',
+    NULL,
+    ARRAY['10000000-0000-4000-8000-000000000099']::UUID[]
+  ) $$,
+  '42501',
+  'Mentioned user is not an active conversation member',
+  'mentioning a non-member is rejected'
 );
 
 UPDATE public.conversation_members

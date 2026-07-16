@@ -35,6 +35,7 @@ export function useConversationSearch(query: string) {
       .map((item) => ({
         id: item.id,
         type: "conversation",
+        conversationType: item.type,
         title: item.title,
         subtitle: item.lastMessagePreview ?? undefined,
         avatarIcon: item.avatarIcon,

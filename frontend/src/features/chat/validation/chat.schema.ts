@@ -63,6 +63,7 @@ export const sendMessageSchema = z.object({
   content: messageContentSchema,
   clientMessageId: uuidSchema,
   messageType: messageTypeSchema.default("text"),
+  mentionedUserIds: z.array(userIdSchema).max(50).default([]),
 });
 
 export const markConversationReadSchema = z.object({

@@ -108,6 +108,14 @@ export function ChatScreen({
       <MessageComposer
         showCharacterCount
         onSend={send}
+        mentionCandidates={
+          resolvedConversation.type === "group"
+            ? lifecycle.members.filter(
+                (member) =>
+                  !member.leftAt && member.userId !== lifecycle.currentUserId,
+              )
+            : []
+        }
         onTyping={notifyTyping}
         onTypingStop={stopTyping}
         disabled={lifecycle.connectionStatus === "disconnected"}

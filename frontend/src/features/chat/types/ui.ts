@@ -40,6 +40,8 @@ export interface ChatMessage {
   senderInitials: string;
   senderAvatarUrl?: string;
   content: string;
+  mentionedUserIds: string[];
+  mentionLabels: string[];
   createdAt: string;
   isOwn: boolean;
   /** Placeholder — future read receipts */
@@ -57,6 +59,7 @@ export type ConversationSearchResultType = "conversation" | "user" | "group";
 export interface ConversationSearchResult {
   id: string;
   type: ConversationSearchResultType;
+  conversationType?: ConversationType;
   title: string;
   subtitle?: string;
   avatarIcon?: string;

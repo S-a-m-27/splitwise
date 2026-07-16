@@ -4,6 +4,7 @@ import { MessageTimestamp } from "@/features/chat/components/date-separator";
 import { cn } from "@/lib/utils";
 import { AlertCircle, Check, CheckCheck } from "lucide-react";
 import type { MessageDeliveryStatus } from "@/features/chat/types/ui";
+import { MessageContent } from "@/features/chat/components/message-content";
 
 interface MessageBubbleProps {
   message: DisplayChatMessage;
@@ -57,7 +58,11 @@ export function OwnMessageBubble({
             "min-[375px]:px-4.5 min-[375px]:py-3.5",
           )}
         >
-          <p className="whitespace-pre-wrap break-words">{message.content}</p>
+          <MessageContent
+            content={message.content}
+            mentionLabels={message.mentionLabels}
+            isOwn
+          />
         </div>
         {message.showTimestamp && (
           <div className="mt-1.5 flex items-center justify-end gap-1.5 pr-1">
@@ -125,7 +130,10 @@ export function OtherMessageBubble({
             "min-[375px]:px-4.5 min-[375px]:py-3.5",
           )}
         >
-          <p className="whitespace-pre-wrap break-words">{message.content}</p>
+          <MessageContent
+            content={message.content}
+            mentionLabels={message.mentionLabels}
+          />
         </div>
         {message.showTimestamp && (
           <MessageTimestamp iso={message.createdAt} className="mt-1.5 pl-1" />

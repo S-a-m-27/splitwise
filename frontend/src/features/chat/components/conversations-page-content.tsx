@@ -52,17 +52,20 @@ export function ConversationsPageContent() {
 
         {!isError && !isLoading && isEmpty && (
           <EmptyConversationState
-            actionLabel="Start a chat"
+            actionLabel="Start a direct message"
             onAction={() => setNewChatOpen(true)}
           />
         )}
 
-        {!isError && !isLoading && !isEmpty && !searchQuery && (
-          <ConversationList conversations={conversations} />
+        {!isError && !isLoading && !isEmpty && (
+          <ConversationList
+            conversations={conversations}
+            onStartDirectMessage={() => setNewChatOpen(true)}
+          />
         )}
       </PageStack>
 
-      {!isEmpty && !isLoading && (
+      {!isLoading && (
         <ChatFab onClick={() => setNewChatOpen(true)} />
       )}
 

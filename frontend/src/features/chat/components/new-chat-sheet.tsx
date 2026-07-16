@@ -39,9 +39,9 @@ export function NewChatSheet({ open, onOpenChange }: NewChatSheetProps) {
         className="max-h-[92dvh] rounded-t-3xl px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-2 min-[375px]:px-5"
       >
         <SheetHeader className="text-left">
-          <SheetTitle className="font-heading text-lg">New message</SheetTitle>
+          <SheetTitle className="font-heading text-lg">New direct message</SheetTitle>
           <SheetDescription>
-            Search for people or groups to start a conversation.
+            Search for a registered person by name to start a private conversation.
           </SheetDescription>
         </SheetHeader>
 
@@ -50,6 +50,8 @@ export function NewChatSheet({ open, onOpenChange }: NewChatSheetProps) {
             value={query}
             onChange={setQuery}
             onSelect={(result) => void handleSelect(result)}
+            placeholder="Search people by name…"
+            directOnly
           />
         </div>
       </SheetContent>

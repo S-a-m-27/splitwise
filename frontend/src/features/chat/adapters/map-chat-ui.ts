@@ -110,6 +110,8 @@ export function mapMessageToUi(
       !member.leftAt &&
       normalizedName(member.displayName) === normalizedName(sender?.displayName),
   ).length;
+  const mentionedUserIds = message.mentionedUserIds ?? [];
+  const mentionedIdSet = new Set(mentionedUserIds);
   return {
     id: message.id,
     conversationId: message.conversationId,
@@ -122,6 +124,11 @@ export function mapMessageToUi(
     senderInitials: initials(senderName),
     senderAvatarUrl: message.senderAvatarUrl ?? sender?.avatarUrl ?? undefined,
     content: message.content ?? "",
+    mentionedUserIds,
+    mentionLabels: members
+      .filter((member) => mentionedIdSet.has(member.userId))
+      .map((member) => member.displayName?.trim() || member.email || "")
+      .filter(Boolean),
     createdAt: message.createdAt,
     isOwn: message.senderId === currentUserId,
     status:

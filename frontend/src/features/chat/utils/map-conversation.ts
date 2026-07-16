@@ -66,7 +66,16 @@ interface MessageListRow {
   updated_at: string;
   edited_at: string | null;
   deleted_at: string | null;
+  metadata?: Json | null;
   sender?: { full_name: string; avatar_url: string | null } | null;
+}
+
+function mentionedUserIds(metadata: Json | null | undefined): string[] {
+  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) return [];
+  const value = metadata.mentioned_user_ids;
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === "string")
+    : [];
 }
 
 export function mapConversationListItem(row: ConversationListRow): ConversationListItem {
@@ -132,6 +141,7 @@ export function mapMessageListItem(row: MessageListRow): MessageListItem {
     updatedAt: row.updated_at,
     editedAt: row.edited_at,
     deletedAt: row.deleted_at,
+    mentionedUserIds: mentionedUserIds(row.metadata),
     senderName: row.sender?.full_name,
     senderAvatarUrl: row.sender?.avatar_url,
   };

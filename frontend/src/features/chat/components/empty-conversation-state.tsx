@@ -16,12 +16,13 @@ const VARIANT_CONFIG: Record<
   "no-conversations": {
     title: "No conversations yet",
     description:
-      "Start a direct message or join a group to begin chatting with your friends.",
+      "You can privately message another registered user or chat with everyone in a group.",
     icon: <MessagesSquare className="size-6 text-primary" aria-hidden="true" />,
   },
   "no-direct": {
     title: "No direct messages",
-    description: "Tap the + button to start a conversation with someone.",
+    description:
+      "Send a private message to another registered user. Search for their name to get started.",
     icon: <MessageSquare className="size-6 text-primary" aria-hidden="true" />,
   },
   "no-group": {
