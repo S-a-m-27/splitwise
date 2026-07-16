@@ -32,6 +32,10 @@ interface AnimateOnScrollProps {
 /**
  * Intersection-observer scroll reveal. Fires once when the element
  * enters the viewport; respects prefers-reduced-motion.
+ *
+ * Starts opaque on the server/first paint only briefly; if the observer
+ * never fires (common on mobile hard loads), a short fallback reveals
+ * content so the landing page cannot stay blank.
  */
 export function AnimateOnScroll({
   children,
@@ -40,26 +44,54 @@ export function AnimateOnScroll({
   direction = "up",
 }: AnimateOnScrollProps) {
   const ref = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState(prefersReducedMotion);
+  const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    if (prefersReducedMotion()) return;
-
     const el = ref.current;
     if (!el) return;
+
+    if (prefersReducedMotion()) {
+      setVisible(true);
+      return;
+    }
+
+    let revealed = false;
+    const reveal = () => {
+      if (revealed) return;
+      revealed = true;
+      setVisible(true);
+    };
 
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry?.isIntersecting) {
-          setVisible(true);
+          reveal();
           observer.unobserve(el);
         }
       },
-      { threshold: 0.12, rootMargin: "0px 0px -40px 0px" },
+      // threshold 0 + small positive rootMargin: more reliable on short mobile viewports
+      { threshold: 0, rootMargin: "0px 0px 0px 0px" },
     );
 
     observer.observe(el);
-    return () => observer.disconnect();
+
+    // If already in view on first paint, reveal on the next frame.
+    const frame = requestAnimationFrame(() => {
+      const rect = el.getBoundingClientRect();
+      const inView =
+        rect.bottom > 0 &&
+        rect.top < (window.innerHeight || document.documentElement.clientHeight);
+      if (inView) reveal();
+    });
+
+    // Hard fallback so a missed observer callback never leaves content invisible.
+    const fallback = window.setTimeout(reveal, 800);
+
+    return () => {
+      cancelAnimationFrame(frame);
+      window.clearTimeout(fallback);
+      observer.disconnect();
+    };
   }, []);
 
   return (
