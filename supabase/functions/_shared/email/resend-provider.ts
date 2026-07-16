@@ -6,8 +6,10 @@ import type {
 import {
   buildRegisteredInviteHtml,
   buildRegisteredInviteSubject,
+  buildRegisteredInviteText,
   buildRegistrationInviteHtml,
   buildRegistrationInviteSubject,
+  buildRegistrationInviteText,
 } from "./templates.ts";
 
 const RESEND_API_URL = "https://api.resend.com/emails";
@@ -16,9 +18,11 @@ async function sendViaResend(
   to: string,
   subject: string,
   html: string,
+  text: string,
 ): Promise<EmailDeliveryResult> {
   const apiKey = Deno.env.get("RESEND_API_KEY");
-  const from = Deno.env.get("RESEND_FROM_EMAIL") ?? "ExpenseShare <onboarding@resend.dev>";
+  const from =
+    Deno.env.get("RESEND_FROM_EMAIL") ?? "Splitwise <onboarding@resend.dev>";
 
   if (!apiKey) {
     return { success: false, errorMessage: "RESEND_API_KEY not configured" };
@@ -30,7 +34,7 @@ async function sendViaResend(
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ from, to: [to], subject, html }),
+    body: JSON.stringify({ from, to: [to], subject, html, text }),
   });
 
   if (!response.ok) {
@@ -50,8 +54,9 @@ export class ResendEmailProvider implements EmailProvider {
   ): Promise<EmailDeliveryResult> {
     return sendViaResend(
       payload.invitedEmail,
-      buildRegisteredInviteSubject(payload.groupName),
+      buildRegisteredInviteSubject(payload),
       buildRegisteredInviteHtml(payload),
+      buildRegisteredInviteText(payload),
     );
   }
 
@@ -60,8 +65,9 @@ export class ResendEmailProvider implements EmailProvider {
   ): Promise<EmailDeliveryResult> {
     return sendViaResend(
       payload.invitedEmail,
-      buildRegistrationInviteSubject(payload.groupName),
+      buildRegistrationInviteSubject(payload),
       buildRegistrationInviteHtml(payload),
+      buildRegistrationInviteText(payload),
     );
   }
 }

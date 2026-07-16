@@ -7,8 +7,10 @@ import type {
 import {
   buildRegisteredInviteHtml,
   buildRegisteredInviteSubject,
+  buildRegisteredInviteText,
   buildRegistrationInviteHtml,
   buildRegistrationInviteSubject,
+  buildRegistrationInviteText,
 } from "./templates.ts";
 
 function getSmtpConfig() {
@@ -19,20 +21,25 @@ function getSmtpConfig() {
   const from =
     Deno.env.get("SMTP_FROM_EMAIL") ??
     Deno.env.get("SMTP_FROM") ??
-    (user ? `ExpenseShare <${user}>` : undefined);
+    (user ? `Splitwise <${user}>` : undefined);
+  const replyTo = Deno.env.get("SMTP_REPLY_TO") ?? user;
 
-  return { host, port, user, pass, from };
+  return { host, port, user, pass, from, replyTo };
 }
 
 async function sendViaSmtp(
   to: string,
   subject: string,
   html: string,
+  text: string,
 ): Promise<EmailDeliveryResult> {
-  const { host, port, user, pass, from } = getSmtpConfig();
+  const { host, port, user, pass, from, replyTo } = getSmtpConfig();
 
   if (!user || !pass) {
-    return { success: false, errorMessage: "SMTP_USER and SMTP_PASS are required" };
+    return {
+      success: false,
+      errorMessage: "SMTP_USER and SMTP_PASS are required",
+    };
   }
 
   if (!from) {
@@ -44,13 +51,17 @@ async function sendViaSmtp(
       host,
       port,
       secure: port === 465,
+      requireTLS: port === 587,
       auth: { user, pass },
+      tls: { minVersion: "TLSv1.2" },
     });
 
     const info = await transporter.sendMail({
       from,
       to,
+      replyTo,
       subject,
+      text,
       html,
     });
 
@@ -59,7 +70,8 @@ async function sendViaSmtp(
       providerMessageId: info.messageId,
     };
   } catch (error) {
-    const message = error instanceof Error ? error.message : "SMTP delivery failed";
+    const message =
+      error instanceof Error ? error.message : "SMTP delivery failed";
     console.error("[email:smtp]", message);
     return { success: false, errorMessage: message };
   }
@@ -74,8 +86,9 @@ export class SmtpEmailProvider implements EmailProvider {
   ): Promise<EmailDeliveryResult> {
     return sendViaSmtp(
       payload.invitedEmail,
-      buildRegisteredInviteSubject(payload.groupName),
+      buildRegisteredInviteSubject(payload),
       buildRegisteredInviteHtml(payload),
+      buildRegisteredInviteText(payload),
     );
   }
 
@@ -84,8 +97,9 @@ export class SmtpEmailProvider implements EmailProvider {
   ): Promise<EmailDeliveryResult> {
     return sendViaSmtp(
       payload.invitedEmail,
-      buildRegistrationInviteSubject(payload.groupName),
+      buildRegistrationInviteSubject(payload),
       buildRegistrationInviteHtml(payload),
+      buildRegistrationInviteText(payload),
     );
   }
 }
