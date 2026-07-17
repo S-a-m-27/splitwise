@@ -43,10 +43,12 @@ export const baseMetadata: Metadata = {
   manifest: APP_CONFIG.enablePwa ? "/manifest.json" : undefined,
   icons: {
     icon: [
+      { url: "/icons/icon.png", type: "image/png" },
       { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
       { url: "/icons/icon-512x512.png", sizes: "512x512", type: "image/png" },
     ],
-    apple: "/icons/icon-192x192.png",
+    apple: [{ url: "/icons/icon.png", type: "image/png" }],
+    shortcut: "/icons/icon.png",
   },
 };
 
