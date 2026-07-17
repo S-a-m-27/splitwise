@@ -82,6 +82,10 @@ export function GroupDetailPageContent({ groupId }: GroupDetailPageContentProps)
   const isAdmin = group?.currentUserRole === "admin";
   const canManageInvites = isOwner || isAdmin;
 
+  // Wait only for above-the-fold essentials (group + balances). Expenses/activity
+  // keep loading in parallel and fill their panels without blocking first paint.
+  const isPageLoading = isLoading || !group || balancesLoading;
+
   function handleDelete() {
     deleteGroup.mutate(groupId, {
       onSuccess: () => {
@@ -109,7 +113,7 @@ export function GroupDetailPageContent({ groupId }: GroupDetailPageContentProps)
     });
   }
 
-  if (isLoading || !group) {
+  if (isPageLoading) {
     return (
       <DashboardShell>
         <GroupsBackHeader title="Group" backHref={ROUTES.groups} backLabel="Back to groups" />
@@ -123,6 +127,10 @@ export function GroupDetailPageContent({ groupId }: GroupDetailPageContentProps)
         )}
       </DashboardShell>
     );
+  }
+
+  if (!group) {
+    return null;
   }
 
   const mappedExpenses = groupExpenses.map(mapExpenseToGroupExpense);
@@ -200,10 +208,10 @@ export function GroupDetailPageContent({ groupId }: GroupDetailPageContentProps)
         <GroupDetailTabs
           activeTab={activeTab}
           onTabChange={setActiveTab}
-          expenseCount={mappedExpenses.length}
+          expenseCount={expensesLoading ? null : mappedExpenses.length}
           balanceCount={settleableBalanceCount}
           memberCount={group.members.length}
-          activityCount={groupActivities.length}
+          activityCount={activitiesLoading ? null : groupActivities.length}
         />
 
         <div

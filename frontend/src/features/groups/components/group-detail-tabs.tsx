@@ -8,10 +8,10 @@ export type GroupDetailTab = "expenses" | "balances" | "members" | "activity" | 
 interface GroupDetailTabsProps {
   activeTab: GroupDetailTab;
   onTabChange: (tab: GroupDetailTab) => void;
-  expenseCount: number;
-  balanceCount: number;
+  expenseCount: number | null;
+  balanceCount: number | null;
   memberCount: number;
-  activityCount: number;
+  activityCount: number | null;
   className?: string;
 }
 
@@ -32,12 +32,12 @@ export function GroupDetailTabs({
   activityCount,
   className,
 }: GroupDetailTabsProps) {
-  const counts: Record<GroupDetailTab, number> = {
+  const counts: Record<GroupDetailTab, number | null> = {
     expenses: expenseCount,
     balances: balanceCount,
     members: memberCount,
     activity: activityCount,
-    chat: 0,
+    chat: null,
   };
 
   function handleKeyDown(
@@ -93,7 +93,7 @@ export function GroupDetailTabs({
             )}
           >
             {tab.label}
-            {(tab.id !== "chat" || counts[tab.id] > 0) && (
+            {counts[tab.id] !== null && (
               <span className={cn("ml-1", META_TEXT_SUBTLE_CLASS)}>
                 ({counts[tab.id]})
               </span>
