@@ -25,7 +25,22 @@ function parseClientEnv() {
     throw new Error("Invalid client environment variables");
   }
 
-  return parsed.data;
+  const data = parsed.data;
+  const isVercelProduction = process.env.VERCEL_ENV === "production";
+  if (isVercelProduction) {
+    const appUrl = data.NEXT_PUBLIC_APP_URL;
+    const isLocalhost =
+      appUrl.includes("localhost") ||
+      appUrl.includes("127.0.0.1") ||
+      appUrl.startsWith("http://");
+    if (isLocalhost) {
+      throw new Error(
+        "NEXT_PUBLIC_APP_URL must be a public HTTPS URL in production (OAuth/email redirects depend on it).",
+      );
+    }
+  }
+
+  return data;
 }
 
 export const env = parseClientEnv();

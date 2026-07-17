@@ -13,6 +13,8 @@ import { getSafeRedirect } from "@/lib/safe-redirect";
 import { useClientSearchParams } from "@/lib/use-client-search-params";
 import { resolveAuthenticatedRegisterVisit } from "@/lib/invitation-register";
 import { AuthGateLoader } from "@/features/auth/components/auth-gate-loader";
+import { AuthDivider } from "@/features/auth/components/auth-divider";
+import { GoogleSignInButton } from "@/features/auth/components/google-sign-in-button";
 import { registerSchema, type RegisterInput } from "../validation/auth.schema";
 import { useAuth } from "../hooks/use-auth";
 import { authService } from "../services/auth.service";
@@ -63,10 +65,12 @@ export function RegisterForm() {
   const invitedEmailParam = searchParams?.get("email")?.trim() ?? "";
   const redirectParam = searchParams?.get("redirect") ?? null;
   const redirectTo = getSafeRedirect(redirectParam);
-  const { register: signUp, isRegistering, isAuthenticated, isLoading, user } = useAuth();
+  const { register: signUp, isRegistering, isAuthenticated, isLoading, user, isSigningInWithGoogle } =
+    useAuth();
   const [showPwd, setShowPwd] = useState(false);
   const [pwdValue, setPwdValue] = useState("");
   const [isSwitchingAccount, setIsSwitchingAccount] = useState(false);
+  const authBusy = isRegistering || isSigningInWithGoogle;
 
   const {
     register: field,
@@ -111,7 +115,11 @@ export function RegisterForm() {
     if (registerDecision.action !== "wrong_account" || isSwitchingAccount) return;
 
     let cancelled = false;
-    setIsSwitchingAccount(true);
+
+    queueMicrotask(() => {
+      if (cancelled) return;
+      setIsSwitchingAccount(true);
+    });
 
     void (async () => {
       const result = await authService.signOut();
@@ -164,6 +172,7 @@ export function RegisterForm() {
   const strength = getStrength(pwdValue);
 
   return (
+    <div className="flex flex-col gap-4">
     <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-4">
       <div className="flex flex-col gap-1.5">
         <label htmlFor="reg-full-name" className={AUTH_LABEL_CLASS}>
@@ -180,7 +189,7 @@ export function RegisterForm() {
             placeholder="John Doe"
             autoComplete="name"
             autoFocus
-            disabled={isRegistering}
+            disabled={authBusy}
             aria-invalid={!!errors.fullName}
             aria-describedby={errors.fullName ? "reg-full-name-error" : undefined}
             {...field("fullName")}
@@ -210,7 +219,7 @@ export function RegisterForm() {
             autoComplete="email"
             autoCapitalize="none"
             readOnly={!!invitedEmailParam}
-            disabled={isRegistering}
+            disabled={authBusy}
             aria-invalid={!!errors.email}
             aria-describedby={errors.email ? "reg-email-error" : undefined}
             {...field("email")}
@@ -238,7 +247,7 @@ export function RegisterForm() {
             type={showPwd ? "text" : "password"}
             placeholder="••••••••"
             autoComplete="new-password"
-            disabled={isRegistering}
+            disabled={authBusy}
             aria-invalid={!!errors.password}
             aria-describedby={
               errors.password || pwdValue
@@ -256,10 +265,9 @@ export function RegisterForm() {
           />
           <button
             type="button"
-            tabIndex={-1}
             aria-label={showPwd ? "Hide password" : "Show password"}
             onClick={() => setShowPwd((v) => !v)}
-            disabled={isRegistering}
+            disabled={authBusy}
             className="absolute top-1/2 right-3 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-all hover:bg-accent hover:text-foreground active:scale-90"
           >
             {showPwd ? (
@@ -314,7 +322,7 @@ export function RegisterForm() {
             type="password"
             placeholder="••••••••"
             autoComplete="new-password"
-            disabled={isRegistering}
+            disabled={authBusy}
             aria-invalid={!!errors.confirmPassword}
             aria-describedby={
               errors.confirmPassword ? "reg-confirm-error" : undefined
@@ -336,7 +344,7 @@ export function RegisterForm() {
       <button
         id="register-submit"
         type="submit"
-        disabled={isRegistering}
+        disabled={authBusy}
         className={AUTH_SUBMIT_CLASS}
       >
         {isRegistering ? (
@@ -354,6 +362,10 @@ export function RegisterForm() {
           </>
         )}
       </button>
+      </form>
+
+      <AuthDivider />
+      <GoogleSignInButton redirectTo={redirectTo} disabled={authBusy} />
 
       <p className="pt-1 text-center text-[13px] text-muted-foreground">
         Already have an account?{" "}
@@ -364,6 +376,6 @@ export function RegisterForm() {
           Sign in
         </Link>
       </p>
-    </form>
+    </div>
   );
 }

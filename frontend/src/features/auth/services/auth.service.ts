@@ -13,6 +13,8 @@ import type {
 import { mapProfileRow, type UserProfile } from "../types";
 import { getAuthErrorMessage } from "./auth.errors";
 import { getAuthCallbackUrl } from "../utils/auth-callback";
+import { getSafeRedirect } from "@/lib/safe-redirect";
+import { ROUTES } from "@/constants/routes";
 
 export { getAuthErrorMessage };
 
@@ -44,6 +46,27 @@ export const authService = {
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
+    });
+
+    return { data, error };
+  },
+
+  /**
+   * Starts Google OAuth via Supabase Auth (redirect flow).
+   * Tokens are handled entirely by Supabase — never stored manually.
+   */
+  async signInWithGoogle(options?: { next?: string | null }) {
+    const supabase = createBrowserClient();
+    const next = getSafeRedirect(options?.next) ?? ROUTES.dashboard;
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: getAuthCallbackUrl(next),
+        queryParams: {
+          access_type: "offline",
+          prompt: "select_account",
+        },
+      },
     });
 
     return { data, error };
@@ -141,6 +164,36 @@ export const authService = {
     }
 
     return mapProfileRow(data);
+  },
+
+  /**
+   * Idempotent profile bootstrap (DB RPC).
+   * Creates a missing profile and fills empty avatar_url from Google metadata
+   * without overwriting customized full_name / existing avatar.
+   */
+  async ensureProfile(): Promise<UserProfile | null> {
+    const supabase = createBrowserClient();
+    const { data, error } = await supabase.rpc("ensure_user_profile");
+
+    if (error || !data) {
+      return null;
+    }
+
+    return mapProfileRow(data);
+  },
+
+  /**
+   * Loads the profile, ensuring one exists when the auth user is present.
+   * Safe under concurrent tabs / retries — uniqueness enforced in Postgres.
+   */
+  async getOrEnsureProfile(userId: string): Promise<UserProfile | null> {
+    const existing = await this.getProfile(userId);
+    if (existing?.avatarUrl) {
+      return existing;
+    }
+
+    const ensured = await this.ensureProfile();
+    return ensured ?? existing;
   },
 
   /** Resends the email verification link. */

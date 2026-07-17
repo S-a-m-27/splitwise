@@ -23,7 +23,7 @@ async function syncAuthState() {
   const { user, session } = await authService.getCurrentUser();
 
   if (session && user) {
-    const profile = await authService.getProfile(user.id);
+    const profile = await authService.getOrEnsureProfile(user.id);
     setAuth(session, user, profile);
     return;
   }
@@ -39,6 +39,7 @@ export function useInitializeAuth() {
 
   useEffect(() => {
     let active = true;
+    let syncGeneration = 0;
 
     async function initSession() {
       try {
@@ -66,9 +67,17 @@ export function useInitializeAuth() {
     const supabase = createBrowserClient();
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async () => {
+    } = supabase.auth.onAuthStateChange(() => {
       if (!active) return;
-      await syncAuthState();
+      // Defer async work out of the auth callback to avoid Supabase deadlocks
+      // and ignore stale generations under rapid multi-tab events.
+      const generation = ++syncGeneration;
+      queueMicrotask(() => {
+        void (async () => {
+          if (!active || generation !== syncGeneration) return;
+          await syncAuthState();
+        })();
+      });
     });
 
     return () => {
@@ -159,6 +168,21 @@ export function useAuth() {
     },
   });
 
+  const googleSignInMutation = useMutation({
+    mutationFn: (variables?: { redirectTo?: string | null }) =>
+      authService.signInWithGoogle({ next: variables?.redirectTo }),
+    onSuccess: (result) => {
+      if (result.error) {
+        toast.error(authService.getErrorMessage(result.error));
+        return;
+      }
+      // Successful start redirects the browser to Google / Supabase.
+    },
+    onError: (error: unknown) => {
+      toast.error(getMutationErrorMessage(error));
+    },
+  });
+
   return {
     user,
     profile,
@@ -172,5 +196,7 @@ export function useAuth() {
     isRegistering: registerMutation.isPending,
     logout: logoutMutation.mutate,
     isLoggingOut: logoutMutation.isPending,
+    signInWithGoogle: googleSignInMutation.mutate,
+    isSigningInWithGoogle: googleSignInMutation.isPending,
   };
 }

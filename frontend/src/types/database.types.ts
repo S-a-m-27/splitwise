@@ -909,6 +909,17 @@ export interface Database {
         Args: Record<string, never>;
         Returns: unknown;
       };
+      ensure_user_profile: {
+        Args: Record<string, never>;
+        Returns: {
+          id: string;
+          full_name: string;
+          avatar_url: string | null;
+          preferred_currency: string;
+          created_at: string;
+          updated_at: string;
+        };
+      };
       handle_updated_at: {
         Args: Record<string, never>;
         Returns: unknown;

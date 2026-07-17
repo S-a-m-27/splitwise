@@ -41,6 +41,17 @@ export const authServerService = {
     return mapProfileRow(data);
   },
 
+  /**
+   * Idempotent profile bootstrap for the current server session.
+   * Used after OAuth callback / when a profile row is missing.
+   */
+  async ensureProfile(): Promise<UserProfile | null> {
+    const supabase = await createServerClient();
+    const { data, error } = await supabase.rpc("ensure_user_profile");
+    if (error || !data) return null;
+    return mapProfileRow(data);
+  },
+
   /** Returns user + profile in a single call for server layouts. */
   async getAuthenticatedContext() {
     const { user, error } = await this.getCurrentUser();
@@ -48,7 +59,11 @@ export const authServerService = {
       return { user: null, profile: null, error };
     }
 
-    const profile = await this.getProfile(user.id);
+    let profile = await this.getProfile(user.id);
+    if (!profile || !profile.avatarUrl) {
+      profile = (await this.ensureProfile()) ?? profile;
+    }
+
     return { user, profile, error: null };
   },
 };
